@@ -19,6 +19,7 @@
 4. **禁止破坏 UI 基调**：本产品的基调是「席 · Ledger」——石墨纸面 + 红墨强调（见 §8），不得引入蓝紫渐变、毛玻璃、大圆角，也不得把强调色改回原作的暖纸金。
 5. **禁止原生 alert/confirm/prompt**：所有弹窗统一使用 `dialog.js` 的应用内弹窗（详见 §6.5）。
 6. **改动不要同步到其它项目**：所有开发仅在 SLATE Teams 仓库进行。
+7. **密钥不落任何可提交路径**：模型 Key 只存 `data/desktop_state.json`（已 gitignore）。`git add -A` 之前先看 `git status`——历史上 `85fa8f6f` 那份已经公开在上游 SLATE（该仓 secret scanning 关着，所以没告警），属既成事实：不得再把它或含它的历史复制进别的仓库或发布线。
 
 ## 3\. 技术栈（固定）
 
@@ -183,6 +184,7 @@ SLATE-Teams/
 * **PyInstaller 6 行为**：onedir 模式 datas 落在 `dist\SLATE Teams\_internal\`（如 `_internal\frontend`）；`sys._MEIPASS` 指向 `_internal`。
 * **双语文档**：`docs/` 为英文站，`docs/zh/` 为中文站；`README.md` 英文 / `README-zh.md` 中文；均含语言切换链接。
 * `docs/` 是官网（GitHub Pages，main 分支），推送后自动更新。
+* **公开线只走 squash**：远端 `SLATE-Teams` 的 `main` 由本地 `publish` 分支（单提交快照）推出去，**不带上游 SLATE 的提交史**——祖先提交 `85fa8f6f` 里的 `data/desktop_state.json` 含两把真 Key，整段历史一起推必被 push protection 拦下（该仓 `secret_scanning_validity_checks` 是关的：只认形状不认死活，撤销 Key 也不会放行）。日常提交照旧在 `main`（保留完整历史、跟踪 `upstream`）；要发布时 `git checkout publish && git read-tree -u --reset main && git commit -m "release: …"`（把 publish 的树整体换成 main 的树，父提交仍是上一版快照，所以永远快进），再 `git push SLATE-Teams publish:main`。**禁止**把 `main` 直接推给 `SLATE-Teams`，也禁止在 `publish` 上做普通 `merge`（那会把旧对象变成可达）。
 
 ## 10\. 提交前自检清单
 
