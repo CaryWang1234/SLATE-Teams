@@ -1,0 +1,88 @@
+{
+  "id": "parallel-research",
+  "name": "并行研究分析",
+  "description": "需求分析后并行启动技术调研、风险评估、资源评估，最后汇总决策。展示 DAG 并行执行能力。",
+  "nodes": [
+    {
+      "id": "analyze",
+      "name": "需求分析",
+      "role": "analyst",
+      "model": "",
+      "skill": "",
+      "prompt": "你是需求分析师。请根据下面的任务描述输出清晰的需求分析，包含：目标、范围、关键约束、验收标准。只输出分析内容本身，不要寒暄。\n\n任务描述：\n{{task}}",
+      "inputs": {
+        "task": "$input"
+      },
+      "output_key": "analyze",
+      "max_tokens": 800,
+      "temperature": 0.4
+    },
+    {
+      "id": "tech_research",
+      "name": "技术调研",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是技术调研员。基于需求分析，列出实现该任务所需的关键技术、可选方案（至少 2 个）及各方案的优劣对比。只输出调研结果，不要寒暄。\n\n需求分析：\n{{requirement}}",
+      "inputs": {
+        "requirement": "$analyze"
+      },
+      "output_key": "tech",
+      "max_tokens": 900,
+      "temperature": 0.5
+    },
+    {
+      "id": "risk_assess",
+      "name": "风险评估",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是风险评估师。基于需求分析，识别主要技术风险、业务风险和项目风险，按严重程度排序并给出缓解策略。只输出评估结果，不要寒暄。\n\n需求分析：\n{{requirement}}",
+      "inputs": {
+        "requirement": "$analyze"
+      },
+      "output_key": "risk",
+      "max_tokens": 800,
+      "temperature": 0.4
+    },
+    {
+      "id": "resource_plan",
+      "name": "资源评估",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是资源规划师。基于需求分析，估算所需人力、时间、工具和基础设施资源，给出粗略的时间线和里程碑。只输出评估结果，不要寒暄。\n\n需求分析：\n{{requirement}}",
+      "inputs": {
+        "requirement": "$analyze"
+      },
+      "output_key": "resource",
+      "max_tokens": 800,
+      "temperature": 0.4
+    },
+    {
+      "id": "decision",
+      "name": "汇总决策",
+      "role": "decider",
+      "model": "",
+      "skill": "",
+      "prompt": "你是决策者。请综合技术调研、风险评估和资源评估的结果，给出最终决策建议：推荐方案、关键行动项、风险缓解计划和时间估算。只输出决策内容，不要寒暄。\n\n需求分析：\n{{requirement}}\n\n技术调研：\n{{tech}}\n\n风险评估：\n{{risk}}\n\n资源评估：\n{{resource}}",
+      "inputs": {
+        "requirement": "$analyze",
+        "tech": "$tech_research",
+        "risk": "$risk_assess",
+        "resource": "$resource_plan"
+      },
+      "output_key": "decision",
+      "max_tokens": 1200,
+      "temperature": 0.3
+    }
+  ],
+  "edges": [
+    { "from": "analyze", "to": "tech_research" },
+    { "from": "analyze", "to": "risk_assess" },
+    { "from": "analyze", "to": "resource_plan" },
+    { "from": "tech_research", "to": "decision" },
+    { "from": "risk_assess", "to": "decision" },
+    { "from": "resource_plan", "to": "decision" }
+  ]
+}

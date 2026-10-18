@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SLATE Teams · 使用手册 | User Guide</title>
+  <meta name="description" content="SLATE Teams 完整使用手册：从安装到高级功能，一页一页翻的簿式阅读。">
+  <link rel="icon" type="image/svg+xml" href="./mark.svg">
+  <link rel="alternate icon" type="image/png" href="./icon.png">
+  <style>
+    /* ── 基础变量：与 docs/style.css 同一句方言（席 · Ledger） ──
+       这一页不引官网那份样式（独立入口、少一个请求），所以令牌是抄来的；
+       docs/style.css 的浅色红墨与 --radius 由 check_ui_identity 逐条比对，
+       改这儿不改那儿会当场红。名字留着 --parchment/--ink/--roller-* 是历史包袱，
+       值早就不是羊皮纸和木轴了。 */
+    :root {
+      --bg: #101113;
+      --parchment: #1C1D21;
+      --parchment-edge: #2E3036;
+      --ink: #E6E6E8;
+      --ink-dim: #9B9CA2;
+      --ink-faint: #63656B;
+      --gold: #D4705A;
+      --gold-soft: rgba(212,112,90,0.12);
+      --gold-glow: rgba(212,112,90,0.26);
+      --roller-dark: #141517;
+      --roller-mid: #2E3036;
+      --roller-light: #3A3C42;
+      --roller-shine: #D4705A;
+      --mono: "Cascadia Code","JetBrains Mono",Consolas,"Courier New",monospace;
+      --ease-out: cubic-bezier(0.22,1,0.36,1);
+    }
+    body[data-theme="light"] {
+      --bg: #F1F1EF;
+      --parchment: #FAFAF9;
+      --parchment-edge: #D4D4D0;
+      --ink: #191A1C;
+      --ink-dim: #55575C;
+      --ink-faint: #8A8C92;
+      --gold: #97342A;
+      --gold-soft: rgba(151,52,42,0.08);
+      --gold-glow: rgba(151,52,42,0.22);
+      --roller-dark: #D4D4D0;
+      --roller-mid: #C6C6C1;
+      --roller-light: #B7B7B1;
+      --roller-shine: #97342A;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--gold); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── 顶部导航 ─────────────────────────── */
+    .guide-nav {
+      position: fixed; top:0; left:0; right:0; z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--parchment-edge);
+      padding: 0 24px;
+      height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .guide-nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 15px; font-weight: 600; color: var(--ink);
+    }
+    .guide-nav-brand img { width: 22px; height: 22px; border-radius: 0; }
+    .guide-nav-actions { display: flex; gap: 8px; align-items: center; }
+    .nav-btn {
+      background: none; border: 1px solid var(--parchment-edge);
+      color: var(--ink-dim); padding: 5px 14px; border-radius: 0;
+      font-size: 12px; cursor: pointer; transition: color 0.2s, border-color 0.2s;
+      font-family: inherit;
+    }
+    .nav-btn:hover { color: var(--gold); border-color: var(--gold); text-decoration: none; }
+    .nav-btn.active { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); }
+
+    /* ── 卷轴容器 ─────────────────────────── */
+    .scroll-container {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 72px 20px 60px;
+      position: relative;
+    }
+
+    /* ── 页眉页脚压条（原来是一根木轴）：一条石墨横压，两端各点一格红墨 ── */
+    .scroll-roller {
+      height: 6px;
+      position: relative;
+      z-index: 10;
+      background: var(--roller-mid);
+    }
+    .scroll-roller::before,
+    .scroll-roller::after {
+      content: '';
+      position: absolute; top: 0; bottom: 0; width: 22px;
+      background: var(--roller-shine);
+    }
+    .scroll-roller::before { left: 0; }
+    .scroll-roller::after { right: 0; }
+    .roller-top { margin-bottom: 0; }
+    .roller-bottom { margin-top: 0; }
+
+    /* ── 簿页本体 ─────────────────────────── */
+    .scroll-body {
+      background: var(--parchment);
+      border-left: 1px solid var(--parchment-edge);
+      border-right: 1px solid var(--parchment-edge);
+      padding: 48px 56px;
+      position: relative;
+    }
+    /* 38px 一行的簿线：只是纸纹，不参与对齐，也不做羊皮纸光斑 */
+    .scroll-body::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 38px,
+        var(--parchment-edge) 38px,
+        var(--parchment-edge) 39px
+      );
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    /* ── 段落落位：只位移，不失焦、不压扁 ────── */
+    .scroll-section {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+      margin-bottom: 48px;
+      position: relative;
+    }
+    .scroll-section.unfurled {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* 减少动效的读者拿不到入场动画，但绝不能拿不到正文：
+       本文件不引 docs/style.css，那条全局降级规则在这儿不生效，得自己写一遍。 */
+    @media (prefers-reduced-motion: reduce) {
+      .scroll-section { opacity: 1; transform: none; }
+    }
+
+    /* ── 内容排版 ─────────────────────────── */
+    .scroll-title {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+    .scroll-subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: var(--ink-faint);
+      margin-bottom: 40px;
+    }
+    /* 章号是一枚方印，不是圆章 */
+    .chapter-num {
+      display: inline-block;
+      width: 30px; height: 30px;
+      line-height: 28px;
+      text-align: center;
+      border: 1px solid var(--gold);
+      background: var(--gold-soft);
+      color: var(--gold);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 14px;
+      font-weight: 700;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .chapter-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--parchment-edge);
+    }
+    .chapter-body { font-size: 15px; color: var(--ink-dim); }
+    .chapter-body p { margin-bottom: 12px; }
+    .chapter-body strong { color: var(--ink); }
+    .chapter-body ul, .chapter-body ol {
+      margin: 8px 0 16px 20px;
+    }
+    .chapter-body li { margin-bottom: 6px; }
+    .chapter-body code {
+      background: var(--gold-soft);
+      padding: 2px 7px;
+      border-radius: 0;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--gold);
+    }
+    .chapter-body pre {
+      background: var(--bg);
+      border: 1px solid var(--parchment-edge);
+      border-left: 2px solid var(--gold);
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0 16px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--ink);
+    }
+
+    /* 表格 */
+    .ink-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px;
+      font-size: 14px;
+    }
+    .ink-table th {
+      background: var(--gold-soft);
+      color: var(--gold);
+      text-align: left;
+      padding: 8px 12px;
+      font-weight: 600;
+      border-bottom: 2px solid var(--gold);
+    }
+    .ink-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--parchment-edge);
+      color: var(--ink-dim);
+    }
+    .ink-table tr:hover td { background: var(--gold-soft); }
+
+    /* 双语切换 */
+    .lang-en { display: none; }
+    body[data-lang="en"] .lang-zh { display: none; }
+    body[data-lang="en"] .lang-en { display: block; }
+    body[data-lang="en"] span.lang-en { display: inline; }
+    body[data-lang="en"] span.lang-zh { display: none; }
+    body[data-lang="zh"] span.lang-en { display: none; }
+    body[data-lang="zh"] span.lang-zh { display: inline; }
+
+    /* 目录 */
+    .toc {
+      background: var(--bg);
+      border: 1px solid var(--parchment-edge);
+      padding: 20px 24px;
+      margin-bottom: 40px;
+    }
+    .toc-title {
+      font-size: 16px; font-weight: 600;
+      color: var(--gold); margin-bottom: 12px;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+    .toc-list { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 24px; }
+    .toc-list li { margin-bottom: 6px; }
+    .toc-list a {
+      color: var(--ink-dim); font-size: 13px;
+      display: flex; align-items: center; gap: 6px;
+      transition: color 0.2s;
+    }
+    .toc-list a:hover { color: var(--gold); text-decoration: none; }
+    .toc-list a::before {
+      content: '◆'; font-size: 6px; color: var(--gold); opacity: 0.5;
+    }
+
+    /* 分隔线 */
+    .ink-divider {
+      text-align: center;
+      margin: 36px 0;
+      color: var(--ink-faint);
+      font-size: 18px;
+      letter-spacing: 12px;
+      opacity: 0.4;
+    }
+
+    /* 提示框 */
+    .ink-note {
+      background: var(--gold-soft);
+      border-left: 2px solid var(--gold);
+      padding: 12px 16px;
+      margin: 12px 0 16px;
+      font-size: 14px;
+      color: var(--ink-dim);
+    }
+    .ink-note strong { color: var(--gold); }
+
+    /* 进度指示 */
+    .scroll-progress-bar {
+      position: fixed; top: 52px; left: 0; right: 0;
+      height: 2px; z-index: 99; background: transparent;
+    }
+    .scroll-progress-bar span {
+      display: block; height: 100%; width: 0;
+      background: var(--gold);
+      transition: width 0.1s;
+    }
+
+    /* 底部 */
+    .scroll-footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--ink-faint);
+      font-size: 13px;
+    }
+
+    /* ── 响应式 ─────────────────────────── */
+    @media (max-width: 768px) {
+      .scroll-body { padding: 32px 24px; }
+      .scroll-title { font-size: 24px; }
+      .chapter-title { font-size: 18px; }
+      .toc-list { columns: 1; }
+      .scroll-roller::before, .scroll-roller::after { width: 14px; }
+    }
+  </style>
+  <noscript><style>
+    /* 正文靠脚本加 .unfurled 才可见：脚本没跑起来时不该是一片空白 */
+    .scroll-section { opacity: 1 !important; transform: none !important; }
+  </style></noscript>
+</head>
+<body data-lang="zh">
+
+  <!-- 导航 -->
+  <nav class="guide-nav">
+    <a class="guide-nav-brand" href="./index.html">
+      <img src="./mark.svg" alt="SLATE Teams">
+      <span>SLATE Teams · <span class="lang-zh">使用手册</span><span class="lang-en">User Guide</span></span>
+    </a>
+    <div class="guide-nav-actions">
+      <button class="nav-btn" id="btn-lang" onclick="toggleLang()">EN / 中</button>
+      <button class="nav-btn" id="btn-theme" onclick="toggleTheme()">☀</button>
+      <a class="nav-btn" href="./index.html"><span class="lang-zh">首页</span><span class="lang-en">Home</span></a>
+      <a class="nav-btn" href="https://docs.slate-ai.site/" target="_blank" rel="noopener"><span class="lang-zh">文档站</span><span class="lang-en">Docs</span></a>
+    </div>
+  </nav>
+
+  <!-- 阅读进度 -->
+  <div class="scroll-progress-bar"><span id="progress-fill"></span></div>
+
+  <!-- 簿页 -->
+  <div class="scroll-container">
+
+    <!-- 上压条 -->
+    <div class="scroll-roller roller-top"></div>
+
+    <!-- 正文页 -->
+    <div class="scroll-body">
+
+      <!-- 标题 -->
+      <div class="scroll-section">
+        <h1 class="scroll-title">
+          <span class="lang-zh">SLATE Teams 使用手册</span>
+          <span class="lang-en">SLATE Teams User Guide</span>
+        </h1>
+        <p class="scroll-subtitle">
+          <span class="lang-zh">从安装到精通，一页一页翻的簿式手册</span>
+          <span class="lang-en">From installation to mastery, page by page</span>
+        </p>
+      </div>
+
+      <!-- 目录 -->
+      <div class="scroll-section toc">
+        <div class="toc-title">
+          <span class="lang-zh">目录</span>
+          <span class="lang-en">Table of Contents</span>
+        </div>
+        <ol class="toc-list">
+          <li><a href="#ch1"><span class="lang-zh">SLATE Teams 是什么</span><span class="lang-en">What is SLATE Teams?</span></a></li>
+          <li><a href="#ch2"><span class="lang-zh">安装与启动</span><span class="lang-en">Installation</span></a></li>
+          <li><a href="#ch3"><span class="lang-zh">多模型对话</span><span class="lang-en">Multi-Model Chat</span></a></li>
+          <li><a href="#ch4"><span class="lang-zh">Autopilot + 目标模式</span><span class="lang-en">Autopilot + Target Mode</span></a></li>
+          <li><a href="#ch5"><span class="lang-zh">磨墨模式</span><span class="lang-en">Grind Mode</span></a></li>
+          <li><a href="#ch6"><span class="lang-zh">团队</span><span class="lang-en">Team</span></a></li>
+          <li><a href="#ch7"><span class="lang-zh">白板逻辑链</span><span class="lang-en">Whiteboard</span></a></li>
+          <li><a href="#ch8"><span class="lang-zh">工具箱</span><span class="lang-en">Toolbox</span></a></li>
+          <li><a href="#ch9"><span class="lang-zh">专家包</span><span class="lang-en">Expert Packs</span></a></li>
+          <li><a href="#ch10"><span class="lang-zh">工作流模板</span><span class="lang-en">Workflows</span></a></li>
+          <li><a href="#ch11"><span class="lang-zh">知识库与灵光</span><span class="lang-en">Knowledge & Sparks</span></a></li>
+          <li><a href="#ch12"><span class="lang-zh">Code Review</span><span class="lang-en">Code Review</span></a></li>
+          <li><a href="#ch13"><span class="lang-zh">语音输入与提示词优化</span><span class="lang-en">Voice Input &amp; Prompt Polish</span></a></li>
+          <li><a href="#ch14"><span class="lang-zh">截图转代码</span><span class="lang-en">Screenshot to Code</span></a></li>
+          <li><a href="#ch15"><span class="lang-zh">定时任务</span><span class="lang-en">Scheduled Tasks</span></a></li>
+          <li><a href="#ch16"><span class="lang-zh">设置与个性化</span><span class="lang-en">Settings</span></a></li>
+          <li><a href="#ch17"><span class="lang-zh">能力总清单</span><span class="lang-en">Capability Index</span></a></li>
+        </ol>
+      </div>
+
+      <div class="ink-divider">◈ ◈ ◈</div>
+
+      <!-- Ch1 -->
+      <div class="scroll-section" id="ch1">
+        <div class="chapter-title"><span class="chapter-num">1</span>
+          <span class="lang-zh">SLATE Teams 是什么？</span><span class="lang-en">What is SLATE Teams?</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>SLATE Teams 是一款<strong>本地优先</strong>的 AI 协作调度台。它把主流大模型、35 个内置工具、团队辩论、DAG 工作流、白板式逻辑链整合在一个轻量界面里——零 npm、零构建、开箱即用。</p>
+            <div class="ink-note"><strong>核心理念：</strong>让灵感直达行动，中间不隔工具摩擦。</div>
+          </div>
+          <div class="lang-en">
+            <p>SLATE Teams is a <strong>local-first</strong> AI collaboration studio. It integrates mainstream LLMs, 35 built-in tools, team debates, DAG workflows, and whiteboard logic chains — all in a lightweight interface. Zero npm, zero build, ready to use.</p>
+            <div class="ink-note"><strong>Core philosophy:</strong> Let ideas go straight to action, without tool friction in between.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ch2 -->
+      <div class="scroll-section" id="ch2">
+        <div class="chapter-title"><span class="chapter-num">2</span>
+          <span class="lang-zh">安装与启动</span><span class="lang-en">Installation & Quick Start</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p><strong>方式一：安装包（推荐）</strong></p>
+            <p>前往 <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank">GitHub Releases</a> 下载 <code>SLATE-Teams-Setup-x.x.x.exe</code>，双击安装即可。</p>
+            <p>装好后点窗口右上角的 X 不会结束应用：SLATE Teams 缩进系统通知区域继续跑，正在生成的那一轮照常收工，手机端的局域网连接也不掉。双击托盘图标（或右键「显示主窗口」）找回窗口，右键「退出 SLATE Teams」才真的退出，第一次缩下去会弹一条气泡提示。托盘只用 Windows 原生 API 实现，不引入第三方依赖；非 Windows、或这个登录会话根本没有通知区域时，关窗退回原来的直接退出。</p>
+            <p>同一份安装只会开一个 SLATE Teams 窗口：窗口已经开着、或者已经缩进通知区域时再双击一次图标，不会多出一个窗口、也不会多起一份后端——新进程会把正在跑的那个窗口唤回前台（抢不到前台时让任务栏图标闪一下），然后自己退掉。锁随进程消失，崩溃或被任务管理器结束都不会把应用变成「再也打不开」；装到另一个目录的副本算另一份安装，可以与这一份同时跑。</p>
+            <p><strong>macOS</strong></p>
+            <p>前往 <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank">GitHub Releases</a> 下载 <code>SLATE-Teams-Setup-x.x.x.dmg</code>，双击挂载后把「SLATE Teams」拖进「应用程序」。这个 <code>.dmg</code> 由 CI 直接产出，只做了 ad-hoc 签名、没有公证，首次打开会被 Gatekeeper 拦一次：在访达里右键（或长按）图标 → 「打开」 → 再点一次「打开」，此后就能双击启动。如果对话框写的是「已损坏，无法打开」（只有「移到废纸篓」，没有「打开」按钮），说明系统没认到签名，改用这条命令去掉隔离标记再打开：<code>sudo xattr -dr com.apple.quarantine "/Applications/SLATE Teams.app"</code>。</p>
+            <p>安装版的数据不在 <code>.app</code> 包里，而在 <code>~/Library/Application Support/SLATE Teams</code>：对话历史、API Key、后端日志和 WebView 的个人资料都在这里。替换 <code>.app</code> 升级不会动你的数据，包体也不会在运行时被写脏——将来真签名公证时，那种改动是会废掉签名的。源码运行仍然把数据放在仓库的 <code>data/</code>。</p>
+            <p>窗口用 macOS 原生的 WKWebView 渲染，Windows 用 Edge WebView2，两套内核各自的偏好与缓存互不相通。「设置 → 关于」里的检查更新在 Mac 上给出的是这一平台的 <code>.dmg</code> 链接，不会推一个双击打不开的 <code>.exe</code>；发布产物里找不到匹配文件时退回 Releases 页面。</p>
+            <p>键盘上 <code>⌘ + N</code> 新建对话、<code>⌘ + D</code> 切换明暗，<code>Ctrl</code> 组合同样有效；焦点在白板画布里时 <code>⌘ + D</code> 归给「复制选中的卡片」这条绑定，不会去翻明暗。界面正文走系统字体（苹方），代码走 SF Mono / Menlo，Windows 上仍是微软雅黑与 Consolas。</p>
+            <p>高危命令的清单按平台补齐：<code>diskutil erase</code>、<code>diskutil reformat</code>、<code>diskutil partitionDisk</code>、<code>diskutil secureErase</code>（抹盘、重分区）会先弹审批；<code>rm -rf /</code>、<code>rm -rf ~</code>、<code>mkfs</code>、<code>dd if=</code> 这类灾难级命令无条件禁止，连审批都不走。</p>
+            <p>Mac 上还没有这两件事：通知区域常驻与「一份安装只开一个窗口」目前只在 Windows 上实现——关窗口就是退出，重复启动会再起一份。另外，这一轮 macOS 改动是在 Windows 上把「平台」当实参、将 Darwin 分支执行并断言验证的，<code>.app</code> 与 <code>.dmg</code> 尚未在真机上跑过。</p>
+            <p><strong>方式二：源码运行</strong></p>
+            <pre>git clone https://github.com/CaryWang1234/SLATE-Teams.git
+cd SLATE-Teams
+pip install -r requirements.txt
+python desktop.py</pre>
+            <p>源码启动后访问 <code>http://127.0.0.1:8000</code>。</p>
+            <p><strong>首次配置：</strong></p>
+            <ol>
+              <li>点击顶栏的 <strong>设置</strong> 页签</li>
+              <li>在「模型」栏添加 API Key（支持 OpenAI / Claude / Gemini / DeepSeek / 自定义端点）</li>
+              <li>选择默认模型，即可开始对话</li>
+            </ol>
+          </div>
+          <div class="lang-en">
+            <p><strong>Option A: Installer (Recommended)</strong></p>
+            <p>Download <code>SLATE-Teams-Setup-x.x.x.exe</code> from <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank">GitHub Releases</a> and run the installer.</p>
+            <p>On Windows, clicking X does not quit the app: SLATE Teams hides into the notification area and keeps serving, so the turn that is generating finishes and LAN clients stay connected. Double-click the tray icon (or right-click → "Show window") to bring the window back; only "Quit SLATE Teams" actually exits, and the first time it hides a balloon tells you where it went. The tray uses Windows native APIs only and adds no third-party dependency; off Windows, or in a logon session with no notification area, closing the window exits exactly as before.</p>
+            <p>One install opens exactly one SLATE Teams window: if the window is already open, or already hidden in the notification area, launching again adds no second window and starts no second backend — the new process brings the running window to the front (flashing its taskbar icon when Windows refuses the foreground) and then exits. The lock disappears with the process, so a crash or a kill in Task Manager never leaves the app "unable to open again"; a copy installed into a different folder counts as a different install and may run alongside this one.</p>
+            <p><strong>macOS</strong></p>
+            <p>Download <code>SLATE-Teams-Setup-x.x.x.dmg</code> from <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank">GitHub Releases</a>, mount it, and drag "SLATE Teams" into "Applications". The <code>.dmg</code> comes straight out of CI and is ad-hoc signed but not notarised, so Gatekeeper stops the first launch once: right-click (or long-press) the icon in Finder → Open → Open again. A plain double-click works from then on. If the dialog instead reads "「SLATE Teams」已损坏，无法打开" (only a "Move to Trash" button, no "Open"), the signature was not picked up — clear the quarantine flag first: <code>sudo xattr -dr com.apple.quarantine "/Applications/SLATE Teams.app"</code>.</p>
+            <p>An installed build keeps its data outside the <code>.app</code>, under <code>~/Library/Application Support/SLATE Teams</code>: chat history, API keys, the backend log and the WebView profile. Replacing the <code>.app</code> to upgrade leaves your data alone, and the bundle is never written to at runtime — the kind of change that would void a signature once the app is signed. Running from source still uses <code>data/</code> inside the repo.</p>
+            <p>The window renders through macOS-native WKWebView while Windows uses Edge WebView2; the two engines keep their own preferences and caches apart. "Check for Updates" under Settings → About hands you the <code>.dmg</code> link for this platform rather than an <code>.exe</code> you cannot open, and falls back to the Releases page when no matching asset is published.</p>
+            <p><code>⌘ + N</code> starts a new chat and <code>⌘ + D</code> toggles light/dark; the <code>Ctrl</code> chords keep working too. With focus inside the whiteboard canvas, <code>⌘ + D</code> belongs to its duplicate-selected-cards binding and does not flip the theme. UI text uses the system font (PingFang SC) and code uses SF Mono / Menlo, where Windows stays on Microsoft YaHei and Consolas.</p>
+            <p>The dangerous-command list is now platform-aware: <code>diskutil erase</code>, <code>diskutil reformat</code>, <code>diskutil partitionDisk</code> and <code>diskutil secureErase</code> ask for approval first, while catastrophic ones — <code>rm -rf /</code>, <code>rm -rf ~</code>, <code>mkfs</code>, <code>dd if=</code> — are refused outright, approval or not.</p>
+            <p>Mac does not have two things yet: notification-area residency and the "one install, one window" gate are Windows-only, so closing the window quits and launching again starts a second copy. Also note that this round of macOS work was verified on Windows by passing the platform in as an argument and asserting the Darwin branches — the <code>.app</code> and <code>.dmg</code> have not been run on real hardware.</p>
+            <p><strong>Option B: From Source</strong></p>
+            <pre>git clone https://github.com/CaryWang1234/SLATE-Teams.git
+cd SLATE-Teams
+pip install -r requirements.txt
+python desktop.py</pre>
+            <p>After starting from source, visit <code>http://127.0.0.1:8000</code>.</p>
+            <p><strong>First-Time Setup:</strong></p>
+            <ol>
+              <li>Click the <strong>Settings</strong> tab in the top bar</li>
+              <li>Add your API Key (OpenAI / Claude / Gemini / DeepSeek / custom endpoints)</li>
+              <li>Select a default model and start chatting</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="ink-divider">◈ ◇ ◈</div>
+
+      <!-- Ch3 -->
+      <div class="scroll-section" id="ch3">
+        <div class="chapter-title"><span class="chapter-num">3</span>
+          <span class="lang-zh">多模型对话</span><span class="lang-en">Multi-Model Chat</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>SLATE Teams 支持同时接入多个模型，在对话界面顶部下拉框随时切换。</p>
+            <ul>
+              <li>点击模型下拉框 → 添加/切换模型</li>
+              <li>不同对话可使用不同模型</li>
+              <li>支持本地模型（Ollama / LM Studio 的 OpenAI 兼容端点）</li>
+              <li>模型名旁边画品牌 mark：内置模型与自己添加的模型都按名字认，认得出的按品牌自己的颜色画（没有彩色原件的画中性灰单色），认不出就什么也不画，不会拿别人的 logo 顶替；自定义主题不会把品牌色染掉</li>
+              <li>每条回复显示模型名称与 Token 用量</li>
+            </ul>
+            <div class="ink-note"><strong>快捷键：</strong>Enter 发送 · Shift+Enter 换行 · Ctrl+N / ⌘N 新建对话 · Ctrl+D / ⌘D 切明暗</div>
+            <div class="ink-note"><strong>＋ 模式菜单：</strong>输入框左侧的 <strong>＋</strong> 按钮集中了模式入口 —— 磨墨 / 头脑风暴 / 目标模式 / 定时任务，以及「提及」分组（技能 / 工具 / MCP / 文件），点击行即可启动对应模式或弹出对应候选列表。菜单钉在 ＋ 按钮上方：再按一次 ＋、点菜单外面或按 Esc 都会收起。</div>
+            <div class="ink-note"><strong>思考强度滑杆：</strong>点输入框左侧的档位胶囊弹出滑杆，刻度只列当前模型支持的档位（自动 / 关 / 低 / 中 / 高），每档下方以小字标注对应墨色（随墨 / 清墨 / 淡墨 / 浓墨 / 焦墨），拖动时只预览、松手才生效并落盘。刻度不是照抄一份固定表：SLATE Teams 按端点能力分了九类，强制思考的模型没有「关」这一档；只分开关的端点在档位旁注明「低 / 中 / 高都按开」；这个模型接不住的刻度直接置灰并写明原因，切模型那一刻也会在弹窗里提示。上游若以 400 点名该字段，会剥掉它重发一次——最坏是这次档位不生效，而不是模型用不了。</div>
+            <div class="ink-note"><strong>上下文预算：</strong>设置页「模型配置」里每个模型一行「最大上下文」，由按该模型窗口生成的滑杆、精确数字框、以及「探测窗口」按钮三件组成。「自动」取这个模型自己的标称窗口 ×0.8，不再吸附公共档位——只有 8K 窗口的本地模型过去只能凑不满最低一档、等于把窗口占满没地方写回复，现在拿到 6553。数字框保留你填的精确值（131072 就是 131072，只在 1K–4M 内夹取）。Ollama / llama.cpp / vLLM / OpenAI 兼容这类本地或自定义端点可以一键探测真实窗口，探到的值单独存一张覆盖表，随时能一键清除回到端点自带值。同一个值肩挑两件事——自动压缩的触发阈值与用量条的分母，所以读数不会和压缩时机各说各话；用量条可以直接点，点了跳到对应模型的这一行。</div>
+            <div class="ink-note"><strong>历史摘要折叠条：</strong>超过阈值后，较早的对话会被压成一段摘要。摘要本身仍按原格式完整发给模型，只在消息区折叠成一条——点标题展开才解析 Markdown，长历史不会把当前几轮挤出屏幕。</div>
+          </div>
+          <div class="lang-en">
+            <p>SLATE Teams supports multiple models simultaneously — switch anytime from the top dropdown.</p>
+            <ul>
+              <li>Click model dropdown → Add/switch models</li>
+              <li>Different conversations can use different models</li>
+              <li>Supports local models (Ollama / LM Studio via OpenAI-compatible endpoints)</li>
+              <li>A brand mark sits beside the model name: built-ins and models you add are matched by name; recognised ones are drawn in the brand's own colours (neutral monochrome where no colour original exists), and an unknown one draws nothing instead of wearing another vendor's logo. A custom theme won't recolour them</li>
+              <li>Each reply shows model name and token usage</li>
+            </ul>
+            <div class="ink-note"><strong>Shortcuts:</strong> Enter to send · Shift+Enter for newline · Ctrl+N / ⌘N new conversation · Ctrl+D / ⌘D light-dark</div>
+            <div class="ink-note"><strong>＋ Mode Menu:</strong> The <strong>＋</strong> button left of the chat input centralizes mode entries — Grind / Brainstorm / Target Mode / Scheduled Tasks — plus an @-mention group (Skills / Tools / MCP / Files) that opens a filtered picker. The panel is anchored above the ＋ button: press ＋ again, click outside, or hit Esc to dismiss it.</div>
+            <div class="ink-note"><strong>Reasoning slider:</strong> Click the level pill left of the input to open a slider whose ticks list only what the current model supports (auto / off / low / medium / high). Each tick carries its ink shade in small type (free / clear / light / rich / charred); dragging previews, letting go applies and persists. Those ticks are not a copied fixed table: SLATE Teams sorts endpoints into nine capability classes, so a model that forces reasoning has no "off" tick, on/off-only endpoints say "low/medium/high are all treated as on", and a tick this model cannot take is greyed out with the reason — switching models says so in the popup too. If upstream answers 400 naming that field, it is stripped and retried once: worst case the level is ignored, not the model unusable.</div>
+            <div class="ink-note"><strong>Context budget:</strong> Under Settings → model configuration, every model row carries a "max context" control made of three parts — a slider whose ticks are generated from that model's own window, an exact number box, and a "probe window" button. "Auto" now takes this model's nominal window × 0.8 with no snapping to shared ticks: a local model with an 8K window used to be unable to reach the lowest tick and would fill the whole window, leaving no room for the reply, and now lands on 6553. The number box keeps whatever you type (131072 stays 131072; it is only clamped inside 1K–4M). For Ollama / llama.cpp / vLLM / OpenAI-compatible endpoints, one click probes the endpoint's real window, which is stored as a separate override you can clear back to the endpoint's own value at any time. One value still does two jobs — the auto-compaction threshold and the usage-bar denominator — so the reading can never disagree with when compression fires, and the usage bar is clickable and jumps to that model's row.</div>
+            <div class="ink-note"><strong>Collapsible history summary:</strong> once the threshold is passed, earlier turns are compressed into a summary. That summary is still sent to the model in full; in the transcript it folds into a single strip that parses Markdown only when expanded, so a long history does not push the current turns off the screen.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ch4 -->
+      <div class="scroll-section" id="ch4">
+        <div class="chapter-title"><span class="chapter-num">4</span>
+          <span class="lang-zh">Agent Autopilot + 目标模式自主执行</span><span class="lang-en">Agent Autopilot + Target Mode</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p><strong>Agent Autopilot</strong> 是默认的”少打继续”执行层。只要你要求 SLATE Teams 查看项目、修改文件、运行命令、排查 bug、提交代码或生成文件，它会自动进入多轮 Agent Loop，不需要反复发送”继续”。</p>
+            <p><strong>默认轮数：</strong>普通环境任务最多 24 轮；全面排查、项目级、多文件任务最多 40 轮。系统会把工具结果隐藏回灌给模型，让它继续观察 → 执行 → 验证 → 汇报。</p>
+            <p><strong>干完了就停：</strong>轮数是止损线不是预算。交付物逐项验证通过后，模型调用 <code>exit_autopilot</code>（目标模式为 <code>exit_target_mode</code>）显式收口，再给出最终汇报；没做完则继续动手，不靠停发工具或只说“已完成”来结束循环。</p>
+            <p><strong>Continue Autopilot（默认开，设置 → 自动推进里可关）：</strong>轮数用完不等于干完。末轮还在执行工具时，系统把上限往后推 8 轮（最多推 3 次），让它把手上的活做完；末轮空手停笔时，系统把清单剩余项念回给它，催它继续推进或明确写【任务完成】。追加次数有上限，止损线只是被推后，没有被抹掉。</p>
+            <p><strong>轮数用尽自动续跑：</strong>追加的额度也用完、循环真的散场时，系统替你按下那颗「继续跑完」——每一场最多自动续 2 次，续出来的那一场照常走完成通道收口，并弹一条「轮数用尽 · 已自动续跑（第 1/2 次）」告诉你这不是你点的。它等这一场真的空闲下来才按（末轮的压缩与记忆整理还会占着它几秒），你切去看别的会话时也不抢那一屏；万一等不到空闲，就把「继续跑完」交回你手上，不留一头空。两种情况它不动手：这一场切到了「手动审批」档，或设置里那颗开关被关掉——那时续跑条原样挂在那儿等你点。</p>
+            <p>如果模型只说”我将检查 / 接下来修改 / 是否继续”，系统会自动催它直接调工具；如果没有任何工具记录却口头说完成，系统会要求它先验证或真正动手。</p>
+            <p><strong>砚流 · 落笔即所见：</strong>模型正在逐个 token 写工具参数时，SLATE Teams 会按本地工具 schema 解析这份还没写完的参数，实时演成一行预览——哪些字段已经闭合、哪个字段正在写。它只做预览，<strong>半成品参数永不触发执行</strong>；几十 KB 的正文类字段一律折叠成行数与字数，不刷屏。</p>
+            <p><strong>停止是真取消：</strong>点击停止会同时关闭模型流与工具调用的流式通道，后端随即终止对应的子进程与在跑任务，不再是“界面停了、活还在干”。被取消的调用会以独立状态记进本地事件账，与正常完成区分开。</p>
+            <p><strong>回答被截断会说清楚：</strong>上游偶尔会让一轮只剩思考、没有正文——思考与正文共用输出上限，思考吃满时正文就没地方写了。这种结局不再被静默咽下去：流收到内容后自然结束、却既没有 <code>[DONE]</code> 也没有 <code>finish_reason</code> 时，这一轮会被标记，收尾时如实报出，原因也分开说（思考占满输出上限 / 上游提前中断）；正文有内容但流提前断的，标注可能不完整。此前这套通知与「继续」入口都挂在 Autopilot / 目标模式上，两种模式都关着时是一点信号都没有，用户只看到“它自己停了”。</p>
+            <p><strong>回复模式（每个对话可不同）：</strong>输入框左下的模式胶囊决定这一场怎么干活，内置四档各有自己的图标与颜色——<strong>智能</strong>（全部工具，提示词与旋钮都不动，默认）、<strong>对话</strong>（不调用工具、单轮直答）、<strong>经济</strong>（只读工具白名单 + 低推理强度 + 收紧轮数）、<strong>狂暴</strong>（全工具 + 高推理 + 放宽轮数）。切换只改这一场，换会话各用各的，新对话从默认档起；默认档与自定义模式都在「扩展 → 模式」里建与管理。<strong>模型也能自己造模式：</strong>调 <code>mode_write</code> 建 / 改 / 删，带上追加提示词、工具白名单、推理强度与轮数上限，手动审批档下弹窗把这次改动给你看。白名单是真拦——没开放的工具连原生 tools schema 与文本目录都不下发，模型凭记忆硬调也会在执行口被挡下并说明是模式所限。</p>
+            <p><strong>本轮改动总结 · 可撤回：</strong>这一轮真的往磁盘写过文件（编辑 / 新建 / 追加），模型说完最后一句话后，消息末尾会挂出一张卡片：改了几个文件、各自行数增减，展开能逐文件看 diff。「撤销」把这一轮写过的文件还原成本轮开始<strong>之前</strong>的样子，本轮新建的文件会被删掉，点下去前先过一道红色确认。你在本轮之后又自己改过的文件会被跳过并如实报出来——撤回不吃掉你自己的修改。原文快照存在 <code>data/round_snapshots/</code>，只留 7 天、超过 2MB 的大文件不存原文（这类文件撤回时同样跳过并写明原因），全部留在本机。</p>
+            <p><strong>目标模式</strong> 是更强的显式闭环模式。需要 80 轮长任务、明确 TODOLIST 和六阶段约束时，点击输入框左侧 <strong>＋</strong> 菜单里的「目标模式」开关，或在消息中提及「用目标模式执行」。</p>
+            <p><strong>六阶段流程：</strong></p>
+            <ol>
+              <li><strong>目标理解</strong> → 解析你的需求</li>
+              <li><strong>计划制定</strong> → 拆解为可执行步骤</li>
+              <li><strong>工具执行</strong> → 自主调用文件/终端/搜索等工具</li>
+              <li><strong>验证检查</strong> → 确认每步结果</li>
+              <li><strong>汇报总结</strong> → 输出执行报告</li>
+              <li><strong>追溯归档</strong> → 记录到 TODOLIST</li>
+            </ol>
+            <div class="ink-note"><strong>特性：</strong>最多 80 轮自主调用 · 验证通过后模型调 <code>exit_target_mode</code> 收口 · 中途可暂停不丢进度 · 自动建立 TODOLIST（右栏实时展示，顶栏「任务清单」按钮可随时折叠）· 异常自动恢复</div>
+          </div>
+          <div class="lang-en">
+            <p><strong>Agent Autopilot</strong> is the default "do not make me type continue" execution layer. When you ask SLATE Teams to inspect a project, edit files, run commands, debug, commit, or generate files, it automatically enters a multi-round Agent Loop.</p>
+            <p><strong>Default budgets:</strong> ordinary environment tasks can auto-advance up to 24 rounds; broad project-wide or multi-file tasks can auto-advance up to 40 rounds. Tool results are fed back invisibly so the model can continue Observe → Act → Verify → Report.</p>
+            <p>If the model only says it will inspect/edit/continue, SLATE Teams nudges it to call tools. If it claims completion without any tool evidence, SLATE Teams asks it to verify or actually act first.</p>
+            <p><strong>Stop when it's done:</strong> the round budget is a stop-loss, not a target. Once every deliverable is verified, the model closes the loop by calling <code>exit_autopilot</code> (<code>exit_target_mode</code> in Target Mode) and then writes the final report; unfinished work keeps moving instead of ending on silence or a bare "done".</p>
+            <p><strong>Continue Autopilot (on by default; Settings → Auto-Advance):</strong> running out of rounds is not the same as being done. When the last round was still executing tools, the ceiling moves back by 8 rounds (at most 3 top-ups) so the work in flight can finish; when the model stops without doing anything, the open TODOLIST items are read back to it and it is told to keep going or write 【任务完成】 explicitly. Top-ups are capped, so the stop-loss is pushed later rather than erased.</p>
+            <p><strong>Auto-resume at the cap:</strong> when every top-up is spent and the loop really dismisses, the system presses the "继续跑完" button for you — at most 2 auto-resumes per conversation, and the resumed run closes through the normal completion channel. A toast reports which one it is, so you can see it was not your click. It waits until that conversation is genuinely idle (post-round compression and memory work still hold it for a few seconds) and never steals the screen of another conversation; if it cannot get a window it hands the resume bar back instead of leaving nothing. Two cases keep it hands-off: this conversation is on the Manual approval tier, or the switch is off under Settings → Auto-Advance — then the resume bar simply stays put for you to click.</p>
+            <p><strong>InkStream — arguments as they are written:</strong> while the model streams a tool call token by token, SLATE Teams parses the half-formed arguments against the local tool schema and shows a live one-line preview of which fields are already closed and which one is still being written. It is preview only — <strong>incomplete arguments never reach execution</strong>; multi-KB text fields fold into line and character counts instead of flooding the screen.</p>
+            <p><strong>Stop really cancels:</strong> pressing Stop closes both the model stream and the tool-call stream, so the backend terminates the matching subprocess or running task instead of "UI stopped, work still going". Cancelled calls are recorded in the local event ledger under their own status, kept apart from successful ones.</p>
+            <p><strong>A truncated answer says so:</strong> upstream will occasionally return a round with thinking and no body — the two share one output ceiling, and a long think leaves no room to write. That ending is no longer swallowed: when the stream produced content and then ended naturally with neither <code>[DONE]</code> nor a <code>finish_reason</code>, the round is flagged and reported as it closes, with the cause kept apart (thinking consumed the whole output budget, or upstream cut the stream early); a reply that did produce text but stopped early is labelled possibly incomplete. Both this notice and the "Continue" entry used to hang off Autopilot/target mode, so with both off there was no signal at all — you just watched it stop.</p>
+            <p><strong>Reply modes (per conversation):</strong> the mode pill at the left of the input bar decides how this conversation works, with four built-in tiers each carrying its own icon and colour — <strong>Smart</strong> (every tool, prompt and knobs untouched, the default), <strong>Chat</strong> (no tools, single-turn answer), <strong>Eco</strong> (read-only tool whitelist + low reasoning effort + a tighter round cap), <strong>Turbo</strong> (all tools + high reasoning + a looser round cap). Switching changes only this conversation; each session keeps its own and a new one starts from the default. The default and any custom modes are created and managed under <strong>Extensions → Modes</strong>. <strong>The model can mint modes itself</strong> through <code>mode_write</code> (create / update / delete with an appended prompt, a tool whitelist, a reasoning effort and a round cap), shown to you in a dialog under Manual approval. The whitelist genuinely blocks — a tool that is not opened is dropped from the native tools schema and the text catalogue alike, and a model calling it from memory is stopped at the execute gate with a note that the mode does not allow it.</p>
+            <p><strong>This round's file changes, revertible:</strong> when the round really wrote to disk (edit / create / append), a card appears at the end of the last message once the model stops talking: how many files changed, added and removed lines per file, and a per-file diff when you expand it. "Revert" restores every file this round touched to its state <strong>before</strong> the round and deletes the files the round created, behind a red confirmation step. Files you edited yourself afterwards are skipped and reported as such — a revert never eats your own edits. Originals live in <code>data/round_snapshots/</code>, kept for 7 days, never stored for files over 2MB (those are skipped with the reason stated), and never leave the machine.</p>
+            <p><strong>Target Mode</strong> is the stronger explicit loop. Toggle "Target Mode" in the <strong>＋</strong> menu (left of the chat input), or mention "use Target Mode", when you want 80 rounds, TODOLIST enforcement, and six-phase constraints.</p>
+            <p><strong>Six-Phase Flow:</strong></p>
+            <ol>
+              <li><strong>Goal Understanding</strong> → Parse requirements</li>
+              <li><strong>Plan Creation</strong> → Break into steps</li>
+              <li><strong>Tool Execution</strong> → Autonomously call tools</li>
+              <li><strong>Verification</strong> → Confirm each result</li>
+              <li><strong>Report</strong> → Output summary</li>
+              <li><strong>Trace</strong> → Log to TODOLIST</li>
+            </ol>
+            <div class="ink-note"><strong>Features:</strong> Up to 80 rounds · Model closes the loop with <code>exit_target_mode</code> · Pause anytime · Auto TODOLIST (live right rail, foldable anytime from the "Task list" header button) · Auto-recovery</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ink-divider">◈ ◈ ◈</div>
+
+      <!-- Ch5 -->
+      <div class="scroll-section" id="ch5">
+        <div class="chapter-title"><span class="chapter-num">5</span>
+          <span class="lang-zh">磨墨模式</span><span class="lang-en">Grind Mode</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>把粗糙想法研磨成结构化任务书（墨稿）的交互式引导。</p>
+            <p><strong>启动：</strong>输入 <code>/grind 你的想法</code>，或点击输入框左侧 <strong>＋</strong> 菜单里的「磨墨模式」。输入抽象任务（如"制作一个网站"）时<strong>自动建议切换</strong>。</p>
+            <table class="ink-table">
+              <tr><th>阶段</th><th>说明</th></tr>
+              <tr><td>接墨</td><td>AI 复述想法，列出 3-5 个缺口，只问第一个</td></tr>
+              <tr><td>磨墨</td><td>逐轮追问，一次一问，选择题优先（最多 10 轮）</td></tr>
+              <tr><td>收墨</td><td>输出结构化 JSON 墨稿，含目标/交付物/验收标准</td></tr>
+            </table>
+            <p><strong>收墨触发：</strong>输入「收墨」「够了」「就这样」或达到轮数上限</p>
+            <p><strong>墨稿三键：</strong>送入目标模式执行 / 投到白板推演 / 存为模板复用</p>
+          </div>
+          <div class="lang-en">
+            <p>Interactive refinement: turn rough ideas into structured task briefs.</p>
+            <p><strong>Launch:</strong> Type <code>/grind your idea</code>, or open the <strong>＋</strong> menu (left of the chat input) → Grind Mode. Auto-suggests when detecting abstract tasks.</p>
+            <table class="ink-table">
+              <tr><th>Phase</th><th>Description</th></tr>
+              <tr><td>Receive</td><td>AI restates idea, lists 3-5 gaps, asks only the first</td></tr>
+              <tr><td>Grind</td><td>Round-by-round, one question at a time, A/B choices preferred (up to 10 rounds)</td></tr>
+              <tr><td>Collect</td><td>Outputs structured JSON brief with goals/deliverables/acceptance</td></tr>
+            </table>
+            <p><strong>Trigger Collect:</strong> Type "收墨" / "够了" / "就这样" or reach round limit</p>
+            <p><strong>Three Actions:</strong> Send to Target Mode / Push to Whiteboard / Save as Template</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ch6 -->
+      <div class="scroll-section" id="ch6">
+        <div class="chapter-title"><span class="chapter-num">6</span>
+          <span class="lang-zh">团队</span><span class="lang-en">Team</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>多个 AI 角色围绕你的问题进行多轮辩论，最终输出共识结论。</p>
+            <ol>
+              <li>点击顶栏「团队」标签</li>
+              <li>选择团队成员（9 种预设组合或自定义）</li>
+              <li>输入问题 → 各成员按角色依次发表观点（最大轮数 3 / 5 / 8 / 10，默认 5 轮）</li>
+              <li>决策者给出结论；勾着「决策需我拍板」时到这里停住，等你签字</li>
+            </ol>
+            <p><strong>这一页怎么排：</strong>团队是与「对话」同级的顶层页签，点开是一张三栏会议桌——左栏<strong>在场</strong>（席位与这一场的来历：模型席位、真人席位、预设与历史场次）、中栏<strong>议事流</strong>（发言、轮次标尺与工作流）、右栏<strong>待你签字</strong>（把散在发言流与名册里的停点聚合成一份：等你签字、等谁开口、谁不在场；点一条滚到那一格并划一下，动作仍在那一格上做）。「决策需我拍板」也在右栏，因为它讲的是这一场的规矩。右栏是主持人的视图：手机那一页（局域网遥控 / 与会者页）只当得了与会者，当不了主持人。</p>
+            <p><strong>决策停点：</strong>「决策需我拍板」默认开着——采纳才算收口，选「继续讨论」则带着「未拍板」再辩一轮（重开有上限，不会一直烧 token）。夜间模式（全托管）不弹窗打断，但那一行照画并写明是自动采纳。</p>
+            <p><strong>发言的账：</strong>某位成员这轮失败或没配 API Key，那一格标「失败」/「未参与」，不进下一位的上下文，也不算进发言数与星图。</p>
+            <p><strong>背后跑：</strong>切回对话面板时辩论继续跑，待拍板与收口都进右栏任务中心那一张表（与后台终端任务、子代理批次同一族），点行上的按钮跳回这一场；手动停止的那场进历史并标「已中断」。</p>
+            <p><strong>自定义团队：</strong>设置 → 团队管理 → 添加/编辑成员，每个成员可指定模型、角色、人设。</p>
+            <p><strong>讨论记录：</strong>每次发言除写进本机历史，还会落进后端（团队会话 + 名册 + 每人一次事件账本 run），黑板 · 工作流视图的星图读的就是这份；落库失败时历史仍在，列表里标「仅本机记录」。</p>
+          </div>
+          <div class="lang-en">
+            <p>Multiple AI roles debate your question across rounds, producing a consensus conclusion.</p>
+            <ol>
+              <li>Click "Team" tab</li>
+              <li>Select members (9 presets or custom)</li>
+              <li>Enter question → Members speak in role order (max rounds 3 / 5 / 8 / 10, default 5)</li>
+              <li>The decider concludes; with "Decision needs my sign-off" ticked it stops there and waits for you</li>
+            </ol>
+            <p><strong>How the page is laid out:</strong> Team is a top-level tab next to Chat — a three-column meeting table. Left is <strong>Present</strong> (the seats and how this session came together: model seats, human seats, presets and past sessions), centre is the <strong>debate</strong> (speech, round rulers and workflows), right is <strong>Awaiting You</strong> (the stops scattered through the debate and the roster, gathered into one list: awaiting your sign-off, waiting for who, who is away; clicking an entry scrolls to that row and flashes it — the action still happens on that row). The "Decision needs my sign-off" switch lives in the right column too, because it is a rule of the session. That column is the host's view: the phone page (LAN remote / attendee page) can only be an attendee, never the host.</p>
+            <p><strong>Decision sign-off:</strong> on by default — only approving closes the debate, choosing "keep discussing" re-opens it one more round marked "Not signed off" (re-opens are capped, so it can't burn tokens forever). Night mode never interrupts but still draws that row as auto-approved.</p>
+            <p><strong>Speech accounting:</strong> if a member's request fails or has no API key, that row reads "Failed" / "Did not join" — it never enters the next member's context and never counts towards speech totals or the star map.</p>
+            <p><strong>Running in the background:</strong> the debate continues while you are back on the chat panel; awaiting sign-off and the result land in the right-hand task list (same family as background terminal jobs and sub-agent batches), and the row's button jumps back to that session. A manually stopped debate stays in history labelled "Interrupted".</p>
+            <p><strong>Custom Teams:</strong> Settings → Team Management → Add/Edit members with model, role, persona.</p>
+            <p><strong>Discussion record:</strong> each turn is persisted beyond local history — a team session, its roster and one event-ledger run per member — which is what the Whiteboard → Workflow star map reads. If the write fails the local history stays and that session is labelled "Local only".</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ink-divider">◇ ◈ ◇</div>
+
+      <!-- Ch7 -->
+      <div class="scroll-section" id="ch7">
+        <div class="chapter-title"><span class="chapter-num">7</span>
+          <span class="lang-zh">白板逻辑链</span><span class="lang-en">Whiteboard Logic Chain</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>可视化的卡片 + 连线系统，用于梳理思路、推演方案。</p>
+            <ul>
+              <li>点击「黑板」标签进入</li>
+              <li>AI 可自动创建卡片（分析结果、方案对比等）</li>
+              <li>手动拖拽卡片、建立连线</li>
+              <li>顶栏可切换 Git / 流程 / 看板 / 纲要等显示模式；主黑板就是默认自由画布</li>
+              <li>Git 树识别 HEAD、branch、remote branch、commit、tag、remote、worktree、stash、暂存 / 修改 / 未跟踪计数、未推送提交；节点与视野均可拖动</li>
+              <li>4 种 AI 白板工具：<code>card_create</code> · <code>card_edit</code> · <code>arrow_create</code> · <code>board_summarize</code></li>
+              <li>工具执行自动记录为步骤卡片：按调用编号建卡与更新，执行中 / 完成 / 错误以颜色区分，新一轮运行开始清空上一批，标题与聊天工具卡片同出一个标签事实源</li>
+              <li>第 5 档「工作流」把"怎么跑"和"跑得怎么样"放进同一屏：控制条（停止 / 继续跑完 / 自动推进 / 回复方式 / 思考强度，与聊天框顶部共用同一份状态）、流程卡片墙（<code>data/actions/*.yml</code> 每份说明书一张卡，「运行此流程」以 @提及 发进当前对话、「看步骤」就地懒加载）、当前运行（直接投影事件账本，只改自己那截 DOM，每秒一跳不抖散看板）、团队星图（按角色摆出最近一次团队讨论，谁回了谁、谁动过哪些工具、谁派生了子代理，全部取自真实记录）</li>
+            </ul>
+          </div>
+          <div class="lang-en">
+            <p>Visual cards + connections system for reasoning and planning.</p>
+            <ul>
+              <li>Click "Whiteboard" tab to enter</li>
+              <li>AI auto-creates cards (analysis, comparisons)</li>
+              <li>Drag cards, create connections manually</li>
+              <li>Switch display modes from the header: Git, Flow, Kanban, Outline and Workflow. The main whiteboard is the default freeform canvas.</li>
+              <li>Git Tree recognizes HEAD, branches, remote branches, commits, tags, remotes, worktrees, stash, staged/changed/untracked counts, and unpushed commits. Nodes and viewport are draggable.</li>
+              <li>4 AI tools: <code>card_create</code> · <code>card_edit</code> · <code>arrow_create</code> · <code>board_summarize</code></li>
+              <li>Tool execution is auto-logged as step cards: created and updated per call id, colour-coded running / done / error, cleared when a new run starts, and titled from the same label source as the chat tool cards</li>
+              <li>The 5th mode, "Workflow", puts how to run it and how it's going on one screen: a run bar (stop / resume / autopilot / response mode / reasoning effort, sharing the very state the chat header uses), a flow wall (one card per <code>data/actions/*.yml</code> playbook — "Run this" sends it as an @mention, "Steps" expands lazily), the current run projected straight from the event ledger (patching only its own subtree, so a per-second tick never re-renders the board), and a team star map laid out by role from real records</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ch8 -->
+      <div class="scroll-section" id="ch8">
+        <div class="chapter-title"><span class="chapter-num">8</span>
+          <span class="lang-zh">工具箱（35 个）</span><span class="lang-en">Toolbox (35 Tools)</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>模型在对话中自主决定何时使用，直接描述需求或 <code>@工具名</code> 显式调用。</p>
+            <table class="ink-table">
+              <tr><th>类别</th><th>工具</th></tr>
+              <tr><td>文件操作</td><td><code>file_tree</code> <code>file_peek</code> <code>file_create</code> <code>file_edit</code> <code>file_append</code></td></tr>
+              <tr><td>终端</td><td><code>terminal</code>（沙箱执行，高危需审批） <code>bg_task</code>（后台终端任务：起了就返回，不占住对话）</td></tr>
+              <tr><td>检索与代码</td><td><code>code_search</code> <code>code_scan</code> <code>doc_scan</code> <code>repo_stats</code> <code>todo_scan</code> <code>python_api_extract</code></td></tr>
+              <tr><td>文档生成</td><td><code>doc_write</code> <code>ppt_create</code> <code>word_create</code> <code>html_render</code> <code>html_bundle</code></td></tr>
+              <tr><td>办公与 PDF</td><td><code>excel_tool</code> <code>pdf_tool</code></td></tr>
+              <tr><td>数据处理</td><td><code>json_tool</code> <code>regex_test</code> <code>text_summarize</code> <code>chart_create</code> <code>qrcode_create</code></td></tr>
+              <tr><td>网络</td><td><code>web_search</code> <code>web_fetch</code></td></tr>
+              <tr><td>系统与环境</td><td><code>system_info</code> <code>git_tool</code> <code>css_color</code></td></tr>
+              <tr><td>自动化</td><td><code>browser_automation</code> <code>computer_use</code> <code>screenshot_to_code</code></td></tr>
+              <tr><td>AI 生成</td><td><code>image_gen</code> <code>video_gen</code>（需在设置中配置模型与 API Key）</td></tr>
+              <tr><td>扩展</td><td><code>mcp_factory</code>（工具工厂：生成的工具落 <code>data/evolved/</code>，可在「扩展 → 新功能」停用 / 回滚 / 撤销）</td></tr>
+            </table>
+            <p><strong>特殊字符与编码：</strong><code>file_peek</code> / <code>file_edit</code> 自动识别 UTF-8、UTF-8 BOM、GB18030、GBK、UTF-16 等常见文本编码；中文、emoji、全角符号会原样保留。Windows 下 <code>terminal</code> 隐藏 PowerShell 子窗口，并对 Python / Node / Git / npm / rg 等原生命令做 Unicode-safe 输出捕获。</p>
+            <p><strong>Windows 命令语义：</strong>一条命令一个 PowerShell 进程，命令正文经 stdin 送入并整体按脚本解析——多行块（<code>foreach</code> / <code>if</code>）直接执行，不会因为缺一个空行而石沉大海；<code>&amp;&amp;</code> 与 <code>||</code> 在 PowerShell 5.1 上自动翻成 <code>if ($?)</code> 嵌套；语法错误原样返回并把退出码标成失败，不会再出现「报成功但什么都没跑」。会话仍保持 <code>cd</code> 与环境变量（PowerShell 变量不跨命令），交互式 REPL（裸 <code>python</code> / <code>node</code>）拿不到输入会立刻退出，不会拖住在跑的任务。</p>
+            <p><strong>后台终端任务：</strong>跑实验服务器后端、编译、训练、长测试这类耗时的活儿交给 <code>bg_task</code>：<code>action=start</code> 起完立刻返回（带上 pid、开头一小段输出和日志路径），进程在后台继续跑，模型不会为了等它而反复轮询——要结果用 <code>action=status</code> / <code>log</code> 主动问，或者起任务时带上 <code>notify=true</code>，任务结束/命中你给的正则（<code>trigger={on:"match", pattern:"..."}</code>）时系统会把事件和输出尾巴送回对话里叫醒模型；<code>action=stop</code> 杀整棵进程树，「停止」不是只杀一个壳。任务寿命等于 SLATE Teams 后端进程的寿命，日志落在 <code>data/bg_tasks/&lt;id&gt;.log</code>；右栏会有「后台任务」面板，状态、输出、停止按钮都在那儿，没任务时整栏不出现。高危命令走的还是那道审批门——后台不等于免审批。</p>
+            <p><strong>子代理也能转后台：</strong><code>subagent_run</code> 派出并行子代理时可以带上 <code>background=true</code>——模型当场拿到一个任务编号就接着干别的活，这一批子代理在后台跑完，各份结论以同一条「后台任务消息」通道送回对话里叫醒模型（前台等结果与后台转投用的是同一套唤醒、同一套徽标）。右栏「后台任务」面板把两路后台排在一起，子代理那一行按「看子代理结论」和「停止这批子代理」给出按钮，同时最多 3 批在跑。差别只在寿命：终端任务活在 SLATE Teams 后端进程里，子代理批次活在浏览器页面里——刷新或关掉页面这一批就没了，日志也不会补回来。</p>
+            <p><strong>Actions 流程说明书：</strong>除了内置工具，你还可以把「干某件事的必要流程」写成一份 <code>data/actions/&lt;id&gt;.yml</code>，让模型按你的流程办事。一份 Action 描述「这件事怎么做」，SKILL.md 描述「怎么装一个外部工具」，两者定位不同、互不覆盖。</p>
+            <ul>
+              <li>字段：<code>name</code> · <code>description</code> · <code>when</code> · <code>tags</code> · <code>author</code> · <code>inputs</code> · <code>steps</code> · <code>output</code>，<code>steps[].tool</code> 只是建议，模型可按实际情况换用工具</li>
+              <li>模型侧只注入目录（最多 20 条，只给 id + 名字 + 一句话），要完整流程需用 <code>actions_read</code> 取；目录列表用 <code>actions_list</code></li>
+              <li>「读到流程」不等于「做过流程」：结果摘要与流程单都会提醒模型按步骤实际执行，不要凭说明书编造结论</li>
+              <li>YAML 子集校验（SAY-1）会拒收 Tab 缩进、锚点、多文档、流式 <code>{}</code> / <code>[]</code>、折叠块 <code>&gt;</code>、<code>!!</code> 标签，并报出所在行号；改坏的 yml 在面板里仍然可见并显示原因，不会凭空消失</li>
+              <li>编辑入口：顶栏「扩展」页 → Actions 栏，点「＋ 新建 Action」或点条目进编辑器；边写边校验，报错按行号显示，校验不过保存按钮不会写盘</li>
+              <li>每次覆盖或删除都会先把原文留底到 <code>data/actions/.history/</code>（每份最多 5 版），编辑器里的「历史版本」可查看某一版原文或直接回滚</li>
+              <li>模型可代写：<code>actions_write</code> 要求 yml 里声明 <code>author: model</code>（面板据此显示「模型代写」徽标），这一场开着「手动审批」时会弹出原文让你审批；「自动审批 / 完全访问 / 夜间模式」不弹窗，但格式校验始终生效</li>
+              <li>聊天框 <code>@&lt;id&gt;</code> 提及可把整份流程注入这条消息，注入上限 6000 字，超出部分会提示模型用 <code>actions_read</code> 读全文</li>
+            </ul>
+            <p><strong>自进化工具（工具工厂）：</strong><code>mcp_factory</code> 让 SLATE Teams 把自己缺的工具写出来给自己用。产物一律落在用户数据区 <code>data/evolved/</code>（一个工具两份文件：代码 + 说明清单），<strong>不写进 <code>backend/skills/</code> 那棵源码树</strong>——升级覆盖不到 <code>data/</code>，程序也不在运行时改自己；旧版留在源码目录里的产物会在启动时自动复制过来（只复制，不删）。管理入口是顶栏「扩展」→「新功能」栏，每条都写明当前状态：正常 / 已停用 / 代码有问题（带语法错误行号）/ 与内置工具同名（已由内置接管）。</p>
+            <ul>
+              <li>停用是从模型的工具体系里整条摘掉，不是「调用时再报错」；随时可以再启用</li>
+              <li>覆盖、撤销、回滚都先留底到 <code>data/evolved/.history/</code>（每个工具最多 5 版），条目弹窗里的「历史版本」可查看任一版原文并回滚；回滚也是写，编译不过的旧版本不许盖回去</li>
+              <li>语法不过的生成代码根本不落盘（只编译自检，绝不替你执行一次）；与内置工具同名的创建请求当场拒绝</li>
+              <li>同名冲突时内置优先：升级若带来了同名内置工具，那份自产代码会被顶掉并在栏里标出来——看得见、随时撤得掉，不必跟新版较劲</li>
+              <li><code>@</code> 提及、<code>skill_search</code> 与系统提示都会带上当前启用的自产工具</li>
+            </ul>
+          </div>
+          <div class="lang-en">
+            <p>The model decides when to use them. Describe your need or call <code>@tool_name</code> explicitly.</p>
+            <table class="ink-table">
+              <tr><th>Category</th><th>Tools</th></tr>
+              <tr><td>File Ops</td><td><code>file_tree</code> <code>file_peek</code> <code>file_create</code> <code>file_edit</code> <code>file_append</code></td></tr>
+              <tr><td>Terminal</td><td><code>terminal</code> (sandbox, high-risk needs approval) <code>bg_task</code> (background terminal task: returns at once, doesn't hold the chat)</td></tr>
+              <tr><td>Search &amp; Code</td><td><code>code_search</code> <code>code_scan</code> <code>doc_scan</code> <code>repo_stats</code> <code>todo_scan</code> <code>python_api_extract</code></td></tr>
+              <tr><td>Doc Gen</td><td><code>doc_write</code> <code>ppt_create</code> <code>word_create</code> <code>html_render</code> <code>html_bundle</code></td></tr>
+              <tr><td>Office &amp; PDF</td><td><code>excel_tool</code> <code>pdf_tool</code></td></tr>
+              <tr><td>Data</td><td><code>json_tool</code> <code>regex_test</code> <code>text_summarize</code> <code>chart_create</code> <code>qrcode_create</code></td></tr>
+              <tr><td>Web</td><td><code>web_search</code> <code>web_fetch</code></td></tr>
+              <tr><td>System &amp; Environment</td><td><code>system_info</code> <code>git_tool</code> <code>css_color</code></td></tr>
+              <tr><td>Automation</td><td><code>browser_automation</code> <code>computer_use</code> <code>screenshot_to_code</code></td></tr>
+              <tr><td>AI Generation</td><td><code>image_gen</code> <code>video_gen</code> (requires model and API key in Settings)</td></tr>
+              <tr><td>Extension</td><td><code>mcp_factory</code> (tool factory — generated tools live in <code>data/evolved/</code>, disable / roll back / revoke under Extensions → New features)</td></tr>
+            </table>
+            <p><strong>Unicode and encoding:</strong> <code>file_peek</code> / <code>file_edit</code> auto-detect UTF-8, UTF-8 BOM, GB18030, GBK, UTF-16, and other common text encodings. Chinese, emoji, and full-width symbols are preserved as-is. On Windows, <code>terminal</code> hides PowerShell windows and captures Unicode-safe output for native commands such as Python / Node / Git / npm / rg.</p>
+            <p><strong>Windows command semantics:</strong> one command, one PowerShell process. The command text is handed over on stdin and parsed as a whole script, so multi-line blocks (<code>foreach</code> / <code>if</code>) run without waiting for a blank line, <code>&amp;&amp;</code> and <code>||</code> are rewritten into <code>if ($?)</code> nesting for PowerShell 5.1, and a syntax error comes back verbatim with a failing exit code instead of "success" plus nothing. The session still keeps <code>cd</code> and environment variables (PowerShell variables do not cross commands), and an interactive REPL (bare <code>python</code> / <code>node</code>) exits immediately instead of holding the task open.</p>
+            <p><strong>Background terminal tasks:</strong> hand the slow jobs to <code>bg_task</code> — experiment server processes, compiles, training runs, long test suites. <code>action=start</code> returns at once (pid, the first slice of output, the log path) while the process keeps running in the background, so the model is told not to poll it: ask with <code>action=status</code> / <code>log</code> when you want a result, or pass <code>notify=true</code> at start time and the system wakes the model with the event plus an output tail when the task ends (or matches your regex via <code>trigger={on:"match", pattern:"..."}</code>). <code>action=stop</code> kills the whole process tree, so "stop" is never a white lie. A task lives exactly as long as the SLATE Teams backend process and its log lands in <code>data/bg_tasks/&lt;id&gt;.log</code>; the right rail carries a Background Tasks panel with state, output and the stop button, and the panel stays away entirely when there is nothing to show. High-risk commands still go through the same approval dialog — background is not a bypass.</p>
+            <p><strong>Subagents can go background too:</strong> when <code>subagent_run</code> dispatches a parallel batch it may pass <code>background=true</code> — the model takes a task id and carries on with other work, and once the batch finishes, every conclusion is delivered through the same background-task message channel that wakes the model (waiting in the foreground and handing off to the background share one wake path and one badge system). The right-rail Background Tasks panel lists both kinds of background work in one place, and a subagent row offers "view subagent conclusions" and "stop this subagent batch"; at most 3 batches run at once. The difference is lifetime: terminal tasks live in the SLATE Teams backend process, a subagent batch lives in the browser page — reload or close the tab and that batch is gone, with no log left behind.</p>
+            <p><strong>Action Playbooks:</strong> beyond the built-in tools, you can write the required procedure for a task as a <code>data/actions/&lt;id&gt;.yml</code> file and have the model follow it. An Action describes "how this task is done"; a SKILL.md describes "how to install an external tool". The two have different roles and never overwrite each other.</p>
+            <ul>
+              <li>Fields: <code>name</code> · <code>description</code> · <code>when</code> · <code>tags</code> · <code>author</code> · <code>inputs</code> · <code>steps</code> · <code>output</code>. <code>steps[].tool</code> is advisory — the model may pick a different tool when the situation calls for it</li>
+              <li>Only the catalog is injected into the prompt (up to 20 entries: id, name, one-line summary). Use <code>actions_read</code> for the full procedure and <code>actions_list</code> for the catalog</li>
+              <li>Reading a playbook is not the same as following it: both the tool summary and the rendered procedure remind the model to actually execute the steps instead of inventing results</li>
+              <li>The YAML subset validator (SAY-1) rejects Tab indentation, anchors, multi-document files, flow <code>{}</code> / <code>[]</code>, folded <code>&gt;</code> blocks and <code>!!</code> tags, and reports the offending line number. Broken files stay visible in the panel with their reason instead of disappearing</li>
+              <li>Where to edit: the top bar's Extensions page → the Actions column. "+ New Action" or clicking an entry opens the editor; validation runs as you type with line numbers, and Save refuses a failing draft</li>
+              <li>Every overwrite or delete first copies the previous text to <code>data/actions/.history/</code> (up to 5 versions per Action). The editor's "History" button shows any version or rolls back to it</li>
+              <li>The model can author one too: <code>actions_write</code> requires <code>author: model</code> inside the yml (the panel badges it "Model-written"), and in "Ask" permission mode the exact content is shown for approval first. "Auto" / "Full access" / "Night Mode" skip the dialog, but the format gate always applies</li>
+              <li>Typing <code>@&lt;id&gt;</code> in the chat box injects the whole flow into that message, capped at 6000 characters; the trimmed remainder is flagged so the model reads the rest with <code>actions_read</code></li>
+            </ul>
+            <p><strong>Self-evolving tools (tool factory):</strong> <code>mcp_factory</code> lets SLATE Teams write the tools it is missing and use them itself. Every product lands in the user data area <code>data/evolved/</code> — two files per tool, the code plus its manifest — and <strong>never in the <code>backend/skills/</code> source tree</strong>: an upgrade cannot overwrite <code>data/</code>, and a running program has no business editing itself. Products older versions left inside the source tree are copied over at startup (copied, not deleted). Manage them under the top bar's Extensions page → the New features column, where each entry states its state: working / disabled / broken (with the line of the syntax error) / shadowed by a built-in tool of the same name.</p>
+            <ul>
+              <li>Disabling removes the tool from the model's toolbox entirely, rather than failing when it is called; re-enabling is one click</li>
+              <li>Overwrite, revoke and rollback each take a backup into <code>data/evolved/.history/</code> (up to 5 versions per tool). The entry dialog's history list shows any version and rolls back to it — and rolling back is itself a write, so a version that no longer compiles is never restored</li>
+              <li>Code that does not compile never reaches the disk (the gate compiles, it never executes on your behalf); creating a tool named after a built-in one is refused on the spot</li>
+              <li>Built-ins win on a name clash: if an upgrade ships a built-in tool with the same name, your generated copy is shadowed and labelled — visible and revocable, no fight with the new version</li>
+              <li><code>@</code> mentions, <code>skill_search</code> and the system prompt all carry the currently enabled self-produced tools</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="ink-divider">◈ ◇ ◈</div>
+
+      <!-- Ch9 -->
+      <div class="scroll-section" id="ch9">
+        <div class="chapter-title"><span class="chapter-num">9</span>
+          <span class="lang-zh">专家包</span><span class="lang-en">Expert Packs</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>预制的角色知识包，让 AI 以特定专家身份回答。</p>
+            <ul>
+              <li>对话界面左侧「专家」下拉框选择</li>
+              <li>设置 → 专家包管理 → 导入 <code>.zip</code> / 导出</li>
+              <li>结构：<code>persona.md</code>（人设）+ <code>rules.md</code>（规则）+ <code>knowledge/</code> + <code>skills/</code></li>
+            </ul>
+          </div>
+          <div class="lang-en">
+            <p>Pre-built role knowledge packages for expert-persona responses.</p>
+            <ul>
+              <li>Select from "Expert" dropdown on the left</li>
+              <li>Settings → Expert Pack → Import/Export <code>.zip</code></li>
+              <li>Structure: <code>persona.md</code> + <code>rules.md</code> + <code>knowledge/</code> + <code>skills/</code></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ch10 -->
+      <div class="scroll-section" id="ch10">
+        <div class="chapter-title"><span class="chapter-num">10</span>
+          <span class="lang-zh">工作流模板</span><span class="lang-en">Workflow Templates</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>预定义的 DAG 工作流，多节点并行执行复杂任务。内置 8 个模板：</p>
+            <table class="ink-table">
+              <tr><th>模板</th><th>用途</th></tr>
+              <tr><td>默认开发流程</td><td>通用开发任务</td></tr>
+              <tr><td>并行研究流程</td><td>多维度并行调研</td></tr>
+              <tr><td>Bug 排查流程</td><td>日志/代码/环境并行分析</td></tr>
+              <tr><td>代码审查流程</td><td>质量/安全/性能并行审查</td></tr>
+              <tr><td>数据分析流程</td><td>趋势/异常/统计并行分析</td></tr>
+              <tr><td>文档生成流程</td><td>大纲→正文→摘要→整合</td></tr>
+              <tr><td>产品需求流程</td><td>想法→用户故事→功能→PRD</td></tr>
+              <tr><td>研究报告流程</td><td>课题→调研→方案→报告</td></tr>
+            </table>
+            <p>团队面板 → 工作流 → 导入/导出/删除自定义模板</p>
+          </div>
+          <div class="lang-en">
+            <p>Pre-defined DAG workflows for multi-node parallel execution. 8 built-in templates:</p>
+            <table class="ink-table">
+              <tr><th>Template</th><th>Purpose</th></tr>
+              <tr><td>Default Dev Flow</td><td>General development tasks</td></tr>
+              <tr><td>Parallel Research</td><td>Multi-dimensional parallel research</td></tr>
+              <tr><td>Bug Investigation</td><td>Parallel log/code/env analysis</td></tr>
+              <tr><td>Code Review</td><td>Parallel quality/security/performance review</td></tr>
+              <tr><td>Data Analysis</td><td>Parallel trend/anomaly/stats analysis</td></tr>
+              <tr><td>Doc Generation</td><td>Outline → Content → Summary → Integration</td></tr>
+              <tr><td>Product Requirements</td><td>Idea → User stories → Features → PRD</td></tr>
+              <tr><td>Research Report</td><td>Topic → Research → Comparison → Report</td></tr>
+            </table>
+            <p>Team Panel → Workflows → Import/Export/Delete custom templates</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ink-divider">◈ ◈ ◈</div>
+
+      <!-- Ch11 -->
+      <div class="scroll-section" id="ch11">
+        <div class="chapter-title"><span class="chapter-num">11</span>
+          <span class="lang-zh">知识库与灵光</span><span class="lang-en">Knowledge Base & Sparks</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p><strong>知识库：</strong>长期存储项目知识，对话时自动注入相关上下文。设置 → 记忆与画 → 知识库标签，支持 Markdown。</p>
+            <p><strong>灵光（Spark）：</strong>对话结束时自动捕获有价值的技术洞察，确认后存入知识库，无需手动操作。</p>
+          </div>
+          <div class="lang-en">
+            <p><strong>Knowledge Base:</strong> Long-term project knowledge storage, auto-injected into conversations. Settings → Memory → Knowledge tab. Markdown supported.</p>
+            <p><strong>Sparks:</strong> Auto-captures valuable technical insights when conversations end. Confirms and stores automatically.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ch12 -->
+      <div class="scroll-section" id="ch12">
+        <div class="chapter-title"><span class="chapter-num">12</span>
+          <span class="lang-zh">Code Review</span><span class="lang-en">Code Review</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>对 Git 仓库变更进行 AI 四维度结构化审查。</p>
+            <ol>
+              <li>设置 → Code Review → 选择仓库路径</li>
+              <li>AI 读取 <code>git diff</code> → 分析代码质量/安全性/性能/可维护性</li>
+              <li>输出行级评论 + 汇总报告</li>
+            </ol>
+          </div>
+          <div class="lang-en">
+            <p>AI-powered four-dimensional structured review of Git changes.</p>
+            <ol>
+              <li>Settings → Code Review → Select repository path</li>
+              <li>AI reads <code>git diff</code> → Analyzes quality/security/performance/maintainability</li>
+              <li>Outputs line-level comments + summary report</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="ink-divider">◇ ◈ ◇</div>
+
+      <!-- Ch13 -->
+      <div class="scroll-section" id="ch13">
+        <div class="chapter-title"><span class="chapter-num">13</span>
+          <span class="lang-zh">语音输入与提示词优化</span><span class="lang-en">Voice Input &amp; Prompt Polish</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>点击输入框旁的语音输入按钮（麦克风图标），说出想法，实时转写到输入框。支持中英文自动检测。需浏览器支持 Web Speech API（Chrome / Edge 已支持）。</p>
+            <p>它左边那颗「优化提示词」把写好一半的草稿交给当前模型改写一遍：结果先与原文并排放在弹窗里比对，只有点「采用」才写回输入框；点「保留原文」、按 Esc、点弹窗外面都不算采用。等结果期间你又改了草稿（包括语音实时写进去的字），这次结果会被放弃，不会盖掉你新写的。带思考的模型（DeepSeek / GLM / o 系）会把 reasoning 混在同一条流里，那些分片整段丢掉，不会跟着改写结果一起回填。用哪个模型可在「设置 → AI 辅助功能 → 提示词优化」单独指定，关掉后一次请求都不发。</p>
+          </div>
+          <div class="lang-en">
+            <p>Click the voice-input button (microphone icon) next to the input box, speak your idea, real-time transcription appears. Auto-detects Chinese and English. Requires Web Speech API (Chrome / Edge supported).</p>
+            <p>The "Polish prompt" button to its left hands a half-written draft to the current model for a rewrite: the result sits beside the original in a review dialog, and only "Use it" writes it back — "Keep original", Esc or clicking outside all decline it. Edit the draft while waiting (dictation included) and that result is dropped rather than overwriting what you typed. Models that think out loud (DeepSeek / GLM / o-series) mix their reasoning into the same stream — those chunks are discarded whole, so no thinking ever lands back in your draft. Pin its model under Settings → AI Assistance → Prompt polish; switch it off and it sends no request at all.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ch14 -->
+      <div class="scroll-section" id="ch14">
+        <div class="chapter-title"><span class="chapter-num">14</span>
+          <span class="lang-zh">截图转代码</span><span class="lang-en">Screenshot to Code</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>将截图还原为 HTML/CSS 代码。在对话中描述「把截图转成代码」或 <code>@screenshot_to_code</code> 指定图片路径。</p>
+            <p><strong>支持格式：</strong>PNG / JPG / JPEG / GIF / WebP / BMP / SVG（≤10MB）</p>
+          </div>
+          <div class="lang-en">
+            <p>Convert screenshots to HTML/CSS code. Describe "convert screenshot to code" or use <code>@screenshot_to_code</code> with image path.</p>
+            <p><strong>Formats:</strong> PNG / JPG / JPEG / GIF / WebP / BMP / SVG (≤10MB)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ink-divider">◈ ◇ ◈</div>
+
+      <!-- Ch15 -->
+      <div class="scroll-section" id="ch15">
+        <div class="chapter-title"><span class="chapter-num">15</span>
+          <span class="lang-zh">定时任务</span><span class="lang-en">Scheduled Tasks</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>点击输入框左侧 <strong>＋</strong> 菜单里的「定时任务」，新建任务 → 设置名称、触发条件（定时/事件）、执行内容。支持 Cron 表达式。</p>
+            <ul>
+              <li><strong>定时触发：</strong>每隔 N 分钟/小时/天</li>
+              <li><strong>事件触发：</strong>文件变更、对话结束等</li>
+            </ul>
+          </div>
+          <div class="lang-en">
+            <p>Open the <strong>＋</strong> menu (left of the chat input) → Scheduled Tasks, then create: name, trigger (schedule/event), execution content. Supports Cron expressions.</p>
+            <ul>
+              <li><strong>Schedule:</strong> Every N minutes/hours/days</li>
+              <li><strong>Event:</strong> File changes, conversation end, etc.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ch16 -->
+      <div class="scroll-section" id="ch16">
+        <div class="chapter-title"><span class="chapter-num">16</span>
+          <span class="lang-zh">设置与个性化</span><span class="lang-en">Settings & Customization</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <table class="ink-table">
+              <tr><th>设置项</th><th>说明</th></tr>
+              <tr><td>模型管理</td><td>添加/删除 API Key，配置自定义端点</td></tr>
+              <tr><td>输出控制</td><td>最大 Token 数、流式输出开关</td></tr>
+              <tr><td>审批模式</td><td>四档：手动审批（执行命令、访问网络逐条确认）/ 自动审批（只拦 24 类高危）/ 完全访问（命令与联网都不问，缺条件时仍弹选择题问你一句，胶囊标红）/ 夜间模式（全托管：命令、联网、连反问都不问，自己拍板继续，胶囊标夜紫）。这里定的是每个对话的默认档，单个对话在输入框的审批胶囊里随时改。夜间模式下面还有一颗「跑任务时不让电脑睡眠」：只挡系统睡眠，屏幕照常熄灭，合盖、手动睡眠、已经睡着的机器都叫不醒；租约靠页面心跳续，页面刷新或崩掉后最迟 60 秒交还电源策略；由桌面端界面持有，手机端那一页跑的任务、没有前端在跑的定时任务与后台终端任务都不钉，这一版只在 Windows 上生效</td></tr>
+              <tr><td>主题</td><td>深色/浅色切换；自定义主题开着时这颗按钮锁定，点下去说明原因而不换色</td></tr>
+              <tr><td>自定义主题</td><td>四个源色（底色 / 面板 / 正文 / 强调）推导整套配色 + 正文与代码字体（也能导入自己的字体文件）+ 板块透明度 + 本机背景图与遮罩浓度，附 10 套预设；还能取 Wallpaper Engine 正在用的那张壁纸的预览图当背景——只读它写在自己目录里的配置与 preview，不启动它、不改它的设置，它换了壁纸这里不跟着换，要再点一次；项目栏的文件类型图标也跟着强调色现算（多色图标按色相染色）；改任一格就脱离预设高亮，开关跨设备同步、图与字体只留本机</td></tr>
+              <tr><td>会话归档</td><td>「任务」栏每一行悬停都有归档：归档只是让这一场从任务列表离场，不是删除；正在生成的那一场会被拦下并说明原因（任务中心与进度都指着那一行）。归档过的会话在这一栏逐条恢复（回到任务栏）或删除，删除前先确认，删下去连消息一起清掉</td></tr>
+              <tr><td>语言</td><td>中文 / English</td></tr>
+              <tr><td>上下文压缩</td><td>自动/手动压缩历史对话；摘要发给模型的是原文，界面上折成一条可展开的折叠条。系统的催办与工具结果投喂只进上下文，压缩之后也不会冒成气泡</td></tr>
+              <tr><td>上下文预算</td><td>模型行上「最大上下文」= 按该模型窗口生成的滑杆 + 精确数字框 + 「探测窗口」。自动档取该模型标称窗口 ×0.8、不吸附公共档位；本地/自定义端点可一键探测真实窗口、也可一键清除。同一个值同时决定自动压缩阈值与用量条分母</td>
+              <tr><td>AI 辅助功能</td><td>对话以外的 15 项耗 Token 功能，逐项开关 + 单独选模型（含自动会话标题：新对话跑完首轮补一个短标题，只替换还是「首条消息前 30 字」那种占位标题）</td></tr>
+              <tr><td>短回复审阅</td><td>模型回复后自动检查是否需要推进</td></tr>
+            </table>
+          </div>
+          <div class="lang-en">
+            <table class="ink-table">
+              <tr><th>Setting</th><th>Description</th></tr>
+              <tr><td>Model Management</td><td>Add/remove API keys, configure custom endpoints</td></tr>
+              <tr><td>Output Control</td><td>Max tokens, streaming toggle</td></tr>
+              <tr><td>Approval Mode</td><td>Four tiers: Manual (confirm every command and every network call) / Auto (only the 24 high-risk patterns) / Full Access (commands and network go unasked, the AI still poses one clarifying question when it lacks a condition — the pill renders red) / Night Mode (fully unattended — no approval prompts and no question either, it picks an option and keeps going, the pill renders night-purple). This page sets the default for new conversations; the approval pill in the input bar changes it for one conversation. Under Night Mode sits a "keep this machine awake during night runs" checkbox: it blocks system sleep only — the display still blanks, closing the lid or sleeping by hand still win, and an already-asleep machine cannot be woken. The lease is renewed by the page's heartbeat, so a refresh or a crash hands the power policy back within 60 seconds. The desktop window holds it — tasks running on the phone page, scheduled tasks with no front-end run and background terminal tasks do not. Windows only in this version</td></tr>
+              <tr><td>Theme</td><td>Dark/Light toggle; while a custom theme is on this button locks and clicking it explains why nothing changed</td></tr>
+              <tr><td>Custom Theme</td><td>Four source colours (background / panel / body text / accent) derive the whole palette, plus body and code fonts (import your own font files), a panel-opacity slider, and a local background image with an opacity slider, with 10 presets; it can also pull the preview of the wallpaper Wallpaper Engine is currently using — read-only: it never launches or reconfigures that app, and a new wallpaper there does not follow over until you click again. Editing any swatch drops the preset highlight, the switch syncs across devices while images and fonts stay on this machine</td></tr>
+              <tr><td>Session Archive</td><td>Every row in the Tasks rail offers Archive on hover — archiving only takes the conversation out of the task list, it is not deletion; a conversation that is still generating is blocked with a reason (the task centre and its progress point at that row). Archived conversations live here, each restorable back into the Tasks rail or deletable after a confirmation that also clears its messages</td></tr>
+              <tr><td>Language</td><td>Chinese / English</td></tr>
+              <tr><td>Context Compression</td><td>Auto/manual history compression; the model still receives the summary in full, the transcript folds it into an expandable strip. System nudges and tool-result feeds go only into the context — they never surface as bubbles, even after compression</td></tr>
+              <tr><td>Context Budget</td><td>Per-model "max context" = a slider whose ticks come from that model's own window, an exact number box, and a probe-window button. Auto takes this model's nominal window × 0.8 with no snapping to shared ticks; local/custom endpoints can be probed for their real window and cleared with one click. The same value drives both the auto-compaction threshold and the usage-bar denominator</td>
+              <tr><td>AI Assistance</td><td>15 token-spending features outside the chat loop, each with its own switch and model (including the auto session title: after a new conversation's first exchange the model proposes a short title, replacing only placeholder titles — the "first 30 characters of the opening message" kind)</td></tr>
+              <tr><td>Short Reply Review</td><td>Auto-check if reply needs follow-up</td></tr>
+            </table>
+          </div>
+          <div class="lang-zh">
+            <p><strong>AI 辅助功能这一栏管的是「你没开口时也在发的那请求」：</strong>上下文压缩、记忆蒸馏、对话洞察捕获、自动会话标题、代码理解、代码审查、黑板整理、提示词优化、子代理、高危命令说明、工作流执行、定时任务、图片/视频生成，共 15 项，逐项可关、可单独指定模型（不选就跟随当前主模型）。关掉即一次模型都不发：工具类的三项（子代理、图片、视频）会直接从工具目录里消失，模型看不到也就不会调；定时任务被关掉时触发记录仍在，状态里写明是「已关闭」而不是「跑失败」。其中自动会话标题只在首轮跑完后发一趟，而且只替换还是「首条消息前 30 字」那种占位标题——你自己改过的名字一概不动。</p>
+          </div>
+          <div class="lang-en">
+            <p><strong>What this section really controls is the requests you never asked for:</strong> context compression, memory distillation, conversation insights, auto session title, code understanding, code review, board organize, prompt polish, sub-agents, command explanation, workflow runs, scheduled tasks and image/video generation — 15 items, each switchable and each able to pin its own model (otherwise it follows the main model). Off means zero requests: the three tool-driven ones vanish from the tool catalogue so the model never calls them, and a disabled scheduled task still records the trigger with "switched off" as the reason, not a failure. The auto session title fires once, after the first exchange, and only replaces a placeholder title still reading "first 30 characters of the opening message" — anything you renamed yourself is never touched.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ink-divider">◈ ◈ ◈</div>
+
+      <!-- Ch17 -->
+      <div class="scroll-section" id="ch17">
+        <div class="chapter-title"><span class="chapter-num">17</span>
+          <span class="lang-zh">能力总清单</span><span class="lang-en">Capability Index</span>
+        </div>
+        <div class="chapter-body">
+          <div class="lang-zh">
+            <p>首页只讲「与常见托管型 Agent 的四点差异」，完整清单收在这里。以下能力随安装包一起交付，不需要额外插件或订阅。</p>
+            <table class="ink-table">
+              <tr><th>能力</th><th>一句话说明</th><th>详见</th></tr>
+              <tr><td>统一多模型接入</td><td>GPT / Claude / Gemini、DeepSeek / Kimi / Qwen / GLM 等十余家，加自定义 OpenAI 兼容端点与本地模型（Ollama / LM Studio），一个界面随时换「大脑」；内置与自己加的模型都按品牌名认，认得出的在模型名旁边按品牌原色画出 LobeHub 品牌 mark（没有彩色原件的画中性灰单色），认不出就留白，不拿别人的 logo 顶替</td><td><a href="#ch3">3</a></td></tr>
+              <tr><td>Agent 自动驾驶 + 目标模式</td><td>普通请求自动进入 Agent 循环，默认 24 轮、宽泛项目任务 40 轮；目标模式是显式 80 轮六阶段循环并强制 TODOLIST；干完了由模型调 <code>exit_autopilot</code> / <code>exit_target_mode</code> 收口；轮数用完而活没干完时 Continue Autopilot 追加轮数并催它继续（可关）</td><td><a href="#ch4">4</a></td></tr>
+              <tr><td>磨墨模式</td><td><code>/grind</code> + 一个粗略想法，三阶段追问（接 → 磨 → 收，最多 10 轮）产出含目标、交付物、验收标准的任务书</td><td><a href="#ch5">5</a></td></tr>
+              <tr><td>35 个内置工具</td><td>文件读写编辑、全项目代码检索、Unicode 安全终端、后台终端任务（起了就走，别轮询）、PPT / Word / Excel、PDF 抽取、图表 / 二维码、代码与文档安全扫描、git 信息、联网搜索与抓取、图像视频生成、浏览器与桌面自动化</td><td><a href="#ch8">8</a></td></tr>
+              <tr><td>外部 MCP Server</td><td>SSE 传输接入远端 MCP Server，工具自动发现，与内置工具同列展示、同一接口调用；认得出的品牌按 LobeHub 图标显示 logo，认不出的走通用 MCP mark</td><td><a href="#ch8">8</a></td></tr>
+              <tr><td>审批模式</td><td>四档可逐场切换：手动审批把每条命令与每次联网都拿来问你，自动审批只拦 24 类高危操作，完全访问只关掉审批（命令与联网不问，AI 缺条件时照旧弹选择题），夜间模式再往前一步——连「缺条件时问你一句」也不问，自己拍板继续；灾难性命令在任何档位都无条件阻止，审批弹窗附带 AI 对这条命令用途的解释；夜间模式那一档跑任务时还可以让电脑不睡眠（只挡系统睡眠，屏幕照常熄灭，合盖、手动睡眠、已经睡着的机器都叫不醒，这一版只在 Windows 上生效）</td><td><a href="#ch16">16</a></td></tr>
+              <tr><td>回复模式</td><td>输入框左下的模式胶囊，内置四档且各有图标与颜色：智能（全部工具、提示词与旋钮都不动，默认）/ 对话（不调用工具、单轮直答）/ 经济（只读工具白名单 + 低推理强度 + 收紧轮数）/ 狂暴（全工具 + 高推理 + 放宽轮数）；每场可选自己的档，新对话从默认档起。模型也能用 <code>mode_write</code> 自建 / 改 / 删模式（追加提示词 + 工具白名单 + 旋钮），手动审批档下弹窗给你过目；白名单真拦：未开放的工具既不下发到原生 schema 与文本目录，凭记忆硬调也在执行口被挡下</td><td><a href="#ch4">4</a></td></tr>
+              <tr><td>全沙箱安全</td><td>路径校验 + 高危规则拦截 + 独立数据目录，删除与覆盖前先给看清楚</td><td><a href="#ch16">16</a></td></tr>
+              <tr><td>自定义技能体系</td><td>SKILL.md 即插即用，上传或导入后 <code>@</code> 提及自动注入上下文；其他 Agent 生态的技能目录可原样导入</td><td><a href="#ch9">9</a></td></tr>
+              <tr><td>Actions 流程说明书</td><td>把「干某件事的必要流程」写成一份 yml，模型只看到目录、按需读全文再照做；严格子集校验带行号报错，改坏的文件不会凭空消失</td><td><a href="#ch8">8</a></td></tr>
+              <tr><td>自进化工具</td><td>工具工厂生成的代码与清单落 <code>data/evolved/</code>（升级覆盖不到这里），在「扩展 → 新功能」里停用、回滚、随时撤销；覆盖与删除都先留底，与内置同名时内置优先并把冲突标出来</td><td><a href="#ch8">8</a></td></tr>
+              <tr><td>专家包</td><td>persona.md + rules.md + knowledge/ + skills/ 五个文件打成一个 zip，聊天下拉 / 成员卡 / <code>@</code> 提及三处注入</td><td><a href="#ch9">9</a></td></tr>
+              <tr><td>AI 团队多轮辩论</td><td>提案 / 支持 / 反对 / 反驳 / 决策五种角色，轻模型讨论、重模型定稿，纪要自动生成以省 token；决策可以停下来等你拍板才收口，这场在背后跑完也会进任务中心等你跳回</td><td><a href="#ch6">6</a></td></tr>
+              <tr><td>团队工作流 DAG</td><td>需求 → 拆解 → 编码 → 审查 → 总结，上游输出流向下游，节点状态与输入输出实时可见，成品自动归档，附 8 个模板</td><td><a href="#ch10">10</a></td></tr>
+              <tr><td>定时对话任务</td><td>到点自动发起对话任务，结果归档进专属文件夹，无需人守着</td><td><a href="#ch15">15</a></td></tr>
+              <tr><td>白板逻辑链</td><td>卡片 + 箭头 + Mermaid 流程图 + Git 树视图，看板栏支持全屏推进</td><td><a href="#ch7">7</a></td></tr>
+              <tr><td>长期记忆与知识库</td><td>项目知识长期存储，对话时自动注入相关上下文，跨会话生效</td><td><a href="#ch11">11</a></td></tr>
+              <tr><td>Markdown 笔记库</td><td>本地 wiki：双向链接、全文检索，把散落的记录连成网</td><td><a href="#ch11">11</a></td></tr>
+              <tr><td>项目理解</td><td>先给 AI 做「入职培训」：结构、规则、约定写成文档，作为系统上下文注入</td><td><a href="#ch11">11</a></td></tr>
+              <tr><td>工作区项目</td><td>一个项目可以同时收进多个互不相关的文件夹，同一时刻只在一个「当前根」上工作（文件 / Git / 终端都跟着它走），侧栏点一下就切；宪法也能只属于某个项目</td><td><a href="#ch11">11</a></td></tr>
+              <tr><td>Code Review</td><td>对 diff 逐条给问题与修复建议，提交前先过一遍</td><td><a href="#ch12">12</a></td></tr>
+              <tr><td>任务完成通知</td><td>长任务跑完发系统通知，切到别的窗口也不漏</td><td><a href="#ch16">16</a></td></tr>
+              <tr><td>聊天与数据管理</td><td>历史可搜索 / 导出 / 编辑，一键打包，磁盘占用看得清楚</td><td><a href="#ch16">16</a></td></tr>
+              <tr><td>提示词工厂</td><td>把「帮我做个东西」写成结构化需求文档，再交给外部 Coding Agent 执行；入口在「设置 → 上下文与项目」（顶栏页签与输入行的按钮都已腾出），打开是一扇可收起的工作台弹窗</td><td><a href="#ch1">1</a></td></tr>
+              <tr><td>局域网遥控</td><td>开关可随时关闭（关掉即释放监听端口）+ 手机扫码连到本机 8001 端口，带 token 验证，坐在沙发上指挥 AI；无桌面环境可用 <code>python desktop.py --remote</code></td><td><a href="#ch2">2</a></td></tr>
+              <tr><td>多语言界面</td><td>安装时选一次语言，之后整个界面跟随</td><td><a href="#ch16">16</a></td></tr>
+            </table>
+
+            <p><strong>适用场景</strong>：装完之后这些用法开箱可用，不需要写代码。</p>
+            <ul>
+              <li><strong>个人知识管理员</strong> — 阅读笔记、会议纪要、资料片段交给知识库长期存放，一句话召回。</li>
+              <li><strong>写作与文案搭档</strong> — 从提纲到成稿多轮打磨，团队辩论帮你挑出最有说服力的版本。</li>
+              <li><strong>轻量开发助手</strong> — 读代码、改文件、跑命令、出文档 / PPT / 图表。不想让它动手，就只要一份高质量提示词。</li>
+              <li><strong>想法验证场</strong> — 新项目先在白板上摊开：卡片是需求，箭头是依赖，Mermaid 是流程图。</li>
+              <li><strong>自动化秘书</strong> — 每天早上自动摘新闻、每周整理文件、例行走查，到点就跑、结果自动归档。</li>
+              <li><strong>隐私敏感场景</strong> — 聊天历史在本地 SQLite，状态在本地 JSON；接本地模型时内容不出这台机器。</li>
+            </ul>
+
+            <p><strong>技术栈</strong>：前端就是文件，改完刷新即生效。</p>
+            <table class="ink-table">
+              <tr><th>层</th><th>选型</th><th>意味着什么</th></tr>
+              <tr><td>前端</td><td>原生 HTML + CSS + JavaScript（ES Modules，零构建）</td><td>打开任意文件就能改，刷新即见效果</td></tr>
+              <tr><td>后端</td><td>Python 3.13+ · FastAPI · Uvicorn · httpx</td><td>轻量服务，一条命令启动</td></tr>
+              <tr><td>存储</td><td>SQLite（聊天历史）· JSON（状态 / 定时 / 宪法）</td><td>无外部数据库，数据全在你盘上</td></tr>
+              <tr><td>渲染</td><td>Highlight.js · Mermaid.js（CDN）</td><td>代码高亮与流程图开箱即用</td></tr>
+              <tr><td>桌面</td><td>webview2 外壳 + PyInstaller + Inno Setup 安装器</td><td>Windows 双击安装，用起来像个普通应用</td></tr>
+            </table>
+
+            <p><strong>设计原则</strong>：</p>
+            <ul>
+              <li><strong>纯粹黑白灰底色</strong> — 不做蓝紫渐变、不滥用圆角、不靠阴影和毛玻璃，金色只做点缀。</li>
+              <li><strong>本地优先</strong> — 数据全在本地；API Key 只用于调用大模型，聊天、记忆、文件不经过任何第三方服务器。</li>
+              <li><strong>Token 经济</strong> — 智能压缩、分级调用、静默处理，历史对话折成摘要，省额度也不丢要点。</li>
+              <li><strong>永不冻结</strong> — 四层超时防御覆盖流式与工具调用，慢可以等，卡死不行。</li>
+            </ul>
+            <div class="ink-note"><strong>术语提示：</strong>Token 是大模型计费与记忆窗口的「字数单位」——上下文越长，花费越高、越容易遗忘。</div>
+          </div>
+          <div class="lang-en">
+            <p>The landing page argues only the four differences from hosted agents; the full inventory lives here. Everything below ships with the installer — no extra plugins, no subscription.</p>
+            <table class="ink-table">
+              <tr><th>Capability</th><th>In one line</th><th>See</th></tr>
+              <tr><td>Unified multi-model access</td><td>GPT / Claude / Gemini, DeepSeek / Kimi / Qwen / GLM and more, plus custom OpenAI-compatible endpoints and local models (Ollama / LM Studio) — switch brains mid-conversation. Built-ins and models you add yourself are matched by brand name: recognised ones get their LobeHub mark beside the name in the brand's own colours (neutral monochrome when no colour original exists), unrecognised ones simply draw nothing rather than wearing someone else's logo</td><td><a href="#ch3">3</a></td></tr>
+              <tr><td>Agent Autopilot + Target Mode</td><td>Ordinary requests enter an agent loop automatically: 24 rounds by default, 40 for broad project tasks; Target Mode is the explicit 80-round six-phase loop with enforced TODOLIST; finished work closes via <code>exit_autopilot</code> / <code>exit_target_mode</code>; when rounds run out with work still open, Continue Autopilot tops up the budget and nudges it on (toggleable)</td><td><a href="#ch4">4</a></td></tr>
+              <tr><td>Grind Mode</td><td>Type <code>/grind</code> with a rough idea; three-phase questioning (Receive → Grind → Collect, up to 10 rounds) yields a brief with goals, deliverables and acceptance criteria</td><td><a href="#ch5">5</a></td></tr>
+              <tr><td>35 built-in tools</td><td>File read/write/edit, project-wide code search, Unicode-safe terminal, background terminal tasks (start and walk away, get woken when they end), PPT / Word / Excel, PDF extraction, charts &amp; QR codes, code and document security scans, git info, web search &amp; scraping, image &amp; video generation, browser and desktop automation</td><td><a href="#ch8">8</a></td></tr>
+              <tr><td>External MCP Server</td><td>Connect remote MCP Servers over SSE; remote tools are auto-discovered and listed beside built-ins, called through the same interface. Recognised brands show their LobeHub mark, everything else falls back to the generic MCP glyph</td><td><a href="#ch8">8</a></td></tr>
+              <tr><td>Approval modes</td><td>Four tiers you can switch per conversation: Manual brings every command and every network call to you, Auto only gates the 24 high-risk categories, Full Access drops the approvals (the AI still poses one clarifying question when it lacks a condition), Night Mode goes further and answers that question itself; catastrophic commands are blocked unconditionally in every tier, and the popup carries the AI's explanation of what the command does. Night Mode can also keep the machine awake while a task runs — system sleep only, the display still blanks, closing the lid or an already-asleep machine are out of reach, Windows only in this version</td><td><a href="#ch16">16</a></td></tr>
+              <tr><td>Reply modes</td><td>The mode pill at the left of the input bar ships four built-in tiers, each with its own icon and colour: Smart (every tool, touches neither prompt nor knobs — the default) / Chat (no tools, single-turn answer) / Eco (read-only tool whitelist + low reasoning effort + a tighter round cap) / Turbo (all tools + high reasoning + a looser round cap); each conversation keeps its own and a new one starts from the default. The model can mint modes itself via <code>mode_write</code> (create / update / delete with an appended prompt, a tool whitelist and the knobs), shown to you in a dialog under Manual approval; the whitelist genuinely blocks — a tool that is not opened is dropped from the native schema and the text catalogue alike, and a model calling it from memory is stopped at the execute gate</td><td><a href="#ch4">4</a></td></tr>
+              <tr><td>Sandbox security</td><td>Path validation plus rule-based command interception and an isolated data directory — deletion and overwrite get shown to you first</td><td><a href="#ch16">16</a></td></tr>
+              <tr><td>Custom skill system</td><td>SKILL.md is plug-and-play; <code>@</code>mention auto-injects its context. Skill directories from other agent ecosystems import as-is</td><td><a href="#ch9">9</a></td></tr>
+              <tr><td>Action playbooks</td><td>Write "the required procedure for a task" as a yml file; the model sees only the catalog, reads the full flow on demand, then actually follows it. A strict YAML-subset validator reports line numbers and never hides a broken file</td><td><a href="#ch8">8</a></td></tr>
+              <tr><td>Self-evolving tools</td><td>Tool-factory code and manifests land in <code>data/evolved/</code> (out of reach of upgrades), disabled, rolled back or revoked from Extensions → New features. Overwrites and deletions back up first, and a name clash with a built-in yields to the built-in — visibly</td><td><a href="#ch8">8</a></td></tr>
+              <tr><td>Expert packs</td><td>persona.md + rules.md + knowledge/ + skills/ zipped into one file per expert; inject from the chat dropdown, a team card, or <code>@</code>mention</td><td><a href="#ch9">9</a></td></tr>
+              <tr><td>AI team multi-round debate</td><td>Propose / support / oppose / rebut / decide roles; light models argue, a heavy model calls the final shot, summaries generated to save tokens</td><td><a href="#ch6">6</a></td></tr>
+              <tr><td>Team workflow DAG</td><td>Requirements → Decompose → Code → Review → Summarize; upstream output flows downstream, node status and I/O visible live, artifacts auto-archived, 8 templates included</td><td><a href="#ch10">10</a></td></tr>
+              <tr><td>Scheduled chat tasks</td><td>Fire a chat task on schedule and file results into a dedicated folder — no one has to watch it</td><td><a href="#ch15">15</a></td></tr>
+              <tr><td>Whiteboard logic chain</td><td>Cards + arrows + Mermaid flowcharts + a Git tree view; the board rail can go fullscreen</td><td><a href="#ch7">7</a></td></tr>
+              <tr><td>Long-term memory &amp; knowledge base</td><td>Project knowledge persists and is auto-injected as relevant context, across sessions</td><td><a href="#ch11">11</a></td></tr>
+              <tr><td>Markdown vault</td><td>A local wiki: backlinks and full-text search connect scattered notes</td><td><a href="#ch11">11</a></td></tr>
+              <tr><td>Project understanding</td><td>Give the AI orientation first: structure, rules and conventions written down and injected as system context</td><td><a href="#ch11">11</a></td></tr>
+              <tr><td>Workspace projects</td><td>One project can hold several unrelated folders with exactly one active root at a time (files, Git and the terminal all follow it) — switch in one click from the sidebar; project rules can be scoped to that project too</td><td><a href="#ch11">11</a></td></tr>
+              <tr><td>Code Review</td><td>Line-by-line issues and fixes on a diff, before it becomes a bug</td><td><a href="#ch12">12</a></td></tr>
+              <tr><td>Task completion notices</td><td>System notification when a long task ends, so you can leave the window</td><td><a href="#ch16">16</a></td></tr>
+              <tr><td>Chat &amp; data management</td><td>History is searchable, exportable, editable; one-click packaging and clear disk usage</td><td><a href="#ch16">16</a></td></tr>
+              <tr><td>Prompt Factory</td><td>Turn "help me build something" into a structured requirements document, then hand it to an external coding agent</td><td><a href="#ch1">1</a></td></tr>
+              <tr><td>LAN remote control</td><td>Scan a QR code from your phone to reach port 8001 on this machine, token-protected — command the AI from the couch</td><td><a href="#ch2">2</a></td></tr>
+              <tr><td>Multilingual UI</td><td>Pick the language once at install; the whole interface follows</td><td><a href="#ch16">16</a></td></tr>
+            </table>
+
+            <p><strong>Use cases</strong>: all of these work right after installation, no coding required.</p>
+            <ul>
+              <li><strong>Personal knowledge manager</strong> — reading notes, meeting minutes and reference snippets go to the knowledge base; recall in one sentence.</li>
+              <li><strong>Writing &amp; copy partner</strong> — outline to final draft over several rounds, with a team debate picking the most persuasive version.</li>
+              <li><strong>Lightweight dev assistant</strong> — read code, edit files, run commands, produce docs, decks and charts. Prefer it not to act? Just take the prompt.</li>
+              <li><strong>Idea proving ground</strong> — lay a new project out on the whiteboard: cards are requirements, arrows are dependencies, Mermaid is the flow.</li>
+              <li><strong>Automation secretary</strong> — summarize news each morning, tidy files weekly, run routine checks on schedule and archive results.</li>
+              <li><strong>Privacy-sensitive work</strong> — chat history in local SQLite, state in local JSON; with a local model, content never leaves the machine.</li>
+            </ul>
+
+            <p><strong>Tech stack</strong>: the frontend is files — edit and it takes effect on refresh.</p>
+            <table class="ink-table">
+              <tr><th>Layer</th><th>Choice</th><th>What it means</th></tr>
+              <tr><td>Frontend</td><td>Vanilla HTML + CSS + JavaScript (ES Modules, zero build)</td><td>Open any file to edit, refresh to see changes</td></tr>
+              <tr><td>Backend</td><td>Python 3.13+ · FastAPI · Uvicorn · httpx</td><td>Lightweight service, one command to start</td></tr>
+              <tr><td>Storage</td><td>SQLite (chat history) · JSON (state / schedules / constitution)</td><td>No external database, all data on your disk</td></tr>
+              <tr><td>Rendering</td><td>Highlight.js · Mermaid.js (CDN)</td><td>Code highlighting and flowcharts out of the box</td></tr>
+              <tr><td>Desktop</td><td>webview2 shell + PyInstaller + Inno Setup installer</td><td>Windows double-click install, works like any app</td></tr>
+            </table>
+
+            <p><strong>Design principles</strong>:</p>
+            <ul>
+              <li><strong>Pure black-white-gray base</strong> — no blue-purple gradients, no excess rounding, no shadow or frosted glass; gold is only an accent.</li>
+              <li><strong>Local-first</strong> — data stays local; API keys are used only to call models, and chats, memories and files never pass through a third-party server.</li>
+              <li><strong>Token economy</strong> — smart compression, tiered calls, silent processing: old conversation folds into summaries, saving budget without losing the point.</li>
+              <li><strong>Never frozen</strong> — four layers of timeout defense covering streaming and tool calls. Slow is waitable; stuck is not.</li>
+            </ul>
+            <div class="ink-note"><strong>A term worth pinning down:</strong> tokens are the unit an LLM bills and remembers by — the longer the context, the more it costs and the more it forgets.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ink-divider">◈ ◈ ◈</div>
+
+      <!-- 尾声 -->
+      <div class="scroll-section" style="text-align:center; padding: 20px 0;">
+        <p style="font-size:18px; color:var(--gold); font-weight:600;">
+          <span class="lang-zh">砚落成墨，灵感成行。</span>
+          <span class="lang-en">Ink meets paper, ideas become code.</span>
+        </p>
+        <p style="font-size:13px; color:var(--ink-faint); margin-top:8px;">
+          <a href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank">GitHub</a> · 
+          <a href="./index.html"><span class="lang-zh">首页</span><span class="lang-en">Home</span></a> · 
+          <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank"><span class="lang-zh">下载</span><span class="lang-en">Download</span></a> · 
+          <a href="https://docs.slate-ai.site/" target="_blank" rel="noopener"><span class="lang-zh">文档站</span><span class="lang-en">Docs</span></a>
+        </p>
+      </div>
+
+    </div><!-- /scroll-body -->
+
+    <!-- 下压条 -->
+    <div class="scroll-roller roller-bottom"></div>
+
+  </div><!-- /scroll-container -->
+
+  <div class="scroll-footer">
+    SLATE Teams · <span class="lang-zh">席</span><span class="lang-en">Local AI Collaboration Studio</span> · 
+    <a href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank">GitHub</a>
+  </div>
+
+  <script>
+    // ── 卷轴展开动画 ────────────────────────
+    const sections = document.querySelectorAll('.scroll-section');
+    const unfurl = (el) => el.classList.add('unfurled');
+    if (!('IntersectionObserver' in window)
+        || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      sections.forEach(unfurl);
+    } else {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            unfurl(entry.target);
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      sections.forEach(s => observer.observe(s));
+      // IO 只在"相交状态变了"的那一帧派发：一次大滚动 / 拖滚动条 / 按 End / 带位置刷新，
+      // 章节会从视口下方直接跳到上方，回调一次都不来，于是永久停在 opacity:0。
+      // 兜底：滚动时把"已经越过视口上沿却还没展开"的那几节补上。
+      let sweeping = false;
+      const sweep = () => {
+        sweeping = false;
+        sections.forEach(el => {
+          if (el.classList.contains('unfurled')) return;
+          if (el.getBoundingClientRect().bottom < 0) unfurl(el);
+        });
+      };
+      window.addEventListener('scroll', () => {
+        if (!sweeping) { sweeping = true; requestAnimationFrame(sweep); }
+      }, { passive: true });
+      window.addEventListener('load', sweep);
+      sweep();
+    }
+
+    // ── 阅读进度条 ──────────────────────────
+    const progressFill = document.getElementById('progress-fill');
+    window.addEventListener('scroll', () => {
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+      progressFill.style.width = pct + '%';
+    });
+
+    // ── 语言切换 ────────────────────────────
+    function toggleLang() {
+      const body = document.body;
+      const next = body.getAttribute('data-lang') === 'zh' ? 'en' : 'zh';
+      body.setAttribute('data-lang', next);
+      document.getElementById('btn-lang').classList.toggle('active', next === 'en');
+      try { localStorage.setItem('slate-guide-lang', next); } catch(e) {}
+    }
+    // 恢复上次语言选择
+    try {
+      const saved = localStorage.getItem('slate-guide-lang');
+      if (saved) {
+        document.body.setAttribute('data-lang', saved);
+        document.getElementById('btn-lang')?.classList.toggle('active', saved === 'en');
+      }
+    } catch(e) {}
+
+    // ── 主题切换 ────────────────────────────
+    function toggleTheme() {
+      const body = document.body;
+      const isLight = body.getAttribute('data-theme') === 'light';
+      body.setAttribute('data-theme', isLight ? 'dark' : 'light');
+      document.getElementById('btn-theme').textContent = isLight ? '☀' : '☾';
+      try { localStorage.setItem('slate-guide-theme', isLight ? 'dark' : 'light'); } catch(e) {}
+    }
+    try {
+      const savedTheme = localStorage.getItem('slate-guide-theme');
+      if (savedTheme) {
+        document.body.setAttribute('data-theme', savedTheme);
+        document.getElementById('btn-theme').textContent = savedTheme === 'light' ? '☾' : '☀';
+      }
+    } catch(e) {}
+  </script>
+</body>
+</html>

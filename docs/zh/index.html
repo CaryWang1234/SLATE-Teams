@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SLATE Teams· 本地 AI Agent 工作台 —— 你的密钥，你的机器</title>
+  <meta name="description" content="SLATE Teams 是一个跑在你自己电脑上的开源 AI Agent 工作台：自带模型密钥（OpenAI / Anthropic / Gemini / 任意 OpenAI 兼容端点，或本地 Ollama），数据只落在本机磁盘，每一次工具调用都写进可读的本地事件账本，停止就是真的停止。">
+  <link rel="icon" type="image/svg+xml" href="../mark.svg">
+  <link rel="alternate icon" type="image/png" href="../icon.png">
+  <link rel="stylesheet" href="../style.css">
+  <noscript><style>
+    /* 入场动画由脚本点亮：脚本没跑起来时，正文绝不能整片停在 opacity:0。 */
+    .reveal { opacity: 1 !important; transform: none !important; filter: none !important; }
+    .scroll-section { opacity: 1 !important; transform: none !important; }
+  </style></noscript>
+</head>
+<body>
+
+  <!-- ═══ Mobile Drawer ═══ -->
+  <div class="mobile-drawer-overlay" id="mobile-drawer-overlay">
+    <nav class="mobile-drawer" id="mobile-drawer">
+      <div class="drawer-header">
+        <img src="../mark.svg" alt="SLATE Teams" class="drawer-logo">
+        <span class="drawer-title">SLATE Teams</span>
+        <button class="drawer-close" id="drawer-close" aria-label="关闭">✕</button>
+      </div>
+      <div class="drawer-links">
+        <a href="#loop"><span class="drawer-icon">00</span> 循环</a>
+        <a href="#difference"><span class="drawer-icon">01</span> 差异点</a>
+        <a href="#room"><span class="drawer-icon">02</span> 议事厅</a>
+        <a href="#capabilities"><span class="drawer-icon">03</span> 能力半径</a>
+        <a href="#limits"><span class="drawer-icon">04</span> 诚实边界</a>
+        <a href="#start"><span class="drawer-icon">05</span> 快速上手</a>
+        <a href="../guide.html"><span class="drawer-icon">06</span> 使用手册与工具全表</a>
+        <a href="https://docs.slate-ai.site/" target="_blank" rel="noopener"><span class="drawer-icon">07</span> 文档站（分章阅读）</a>
+      </div>
+      <div class="drawer-footer">
+        <a class="drawer-action" href="https://github.com/CaryWang1234/SLATE-Teams/releases/latest" target="_blank" rel="noopener">下载安装包</a>
+        <a class="drawer-action ghost" href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">读源码</a>
+        <a class="drawer-action ghost" href="https://docs.slate-ai.site/" target="_blank" rel="noopener">文档站</a>
+        <a class="drawer-lang" href="../index.html">中文 / English</a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ═══ Mobile Bottom Bar ═══ -->
+  <div class="mobile-bottom-bar" id="mobile-bottom-bar">
+    <a class="bottom-btn" href="https://github.com/CaryWang1234/SLATE-Teams/releases/latest" target="_blank" rel="noopener">
+      <span class="bottom-icon">↓</span>
+      <span class="bottom-label">下载</span>
+    </a>
+    <a class="bottom-btn primary" href="#start">
+      <span class="bottom-icon">→</span>
+      <span class="bottom-label">立即上手</span>
+    </a>
+    <a class="bottom-btn" href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">
+      <span class="bottom-icon">&lt;/&gt;</span>
+      <span class="bottom-label">源码</span>
+    </a>
+  </div>
+
+  <!-- ═══ Scroll Progress Bar ═══ -->
+  <div class="scroll-progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+  <!-- ═══ Navigation ═══ -->
+  <nav class="nav" id="nav">
+    <div class="container nav-inner">
+      <a class="nav-brand" href="#top">
+        <img src="../mark.svg" alt="SLATE Teams">
+        <span>SLATE Teams</span>
+      </a>
+      <div class="nav-links">
+        <a href="#loop">循环</a>
+        <a href="#difference">差异点</a>
+        <a href="#room">议事厅</a>
+        <a href="#capabilities">能力半径</a>
+        <a href="#limits">诚实边界</a>
+        <a href="#start">快速上手</a>
+        <a href="../guide.html">使用手册</a>
+        <a href="https://docs.slate-ai.site/" target="_blank" rel="noopener">文档站</a>
+      </div>
+      <div class="nav-right">
+        <a class="nav-lang" href="../index.html">EN</a>
+        <button class="theme-toggle" id="theme-toggle" title="切换主题">☾</button>
+        <a class="nav-github" href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">GitHub ↗</a>
+        <button class="nav-hamburger" id="nav-hamburger" aria-label="菜单">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══ Hero ═══ -->
+  <header class="hero" id="top">
+    <div class="hero-grid" id="hero-grid" aria-hidden="true"></div>
+    <div class="container hero-layout">
+      <div class="hero-copy">
+        <div class="hero-mark">
+          <img class="hero-logo" src="../mark.svg" alt="SLATE Teams Logo">
+          <span>自带密钥的 agent</span>
+        </div>
+        <h1 class="hero-title hero-title--cjk">SLATE Teams</h1>
+        <p class="hero-sub">跑在你自己机器上的 AI Agent 工作台：密钥是你的，机器是你的，每一步都留了底。</p>
+        <p class="hero-en">一句话交代目标，一张可见计划，一组真正会动手的工具。</p>
+        <p class="hero-type" id="hero-type"></p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" id="btn-dl" href="https://github.com/CaryWang1234/SLATE-Teams/releases/latest" target="_blank" rel="noopener">下载安装包</a>
+          <a class="btn btn-quiet" href="#loop">先看一遍循环 →</a>
+        </div>
+        <div class="hero-badges">
+          <span class="badge">MIT 协议</span>
+          <span class="badge">自带密钥</span>
+          <span class="badge">无账号 · 无遥测</span>
+          <span class="badge">每个安装包旁边都有 sha256</span>
+        </div>
+        <div class="hero-install">
+          <code id="clone-cmd">git clone https://github.com/CaryWang1234/SLATE-Teams.git</code>
+          <button class="copy-btn" id="copy-clone" type="button" title="复制">复制</button>
+        </div>
+        <p class="hero-shipped">自 <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank" rel="noopener">2026-08-01</a> 起持续发版。之后的每个 release 都带着自己的安装包和一个公开的 sha256——全部出自一个人的书桌。</p>
+        <p class="section-note">
+          托管型 Agent 卖的是「更强的模型 + 它的计量表」。砚默认你已经有好模型了，它去管那些反复出问题的部分：<strong>可审计的循环、真能停下的停止、不用等别人发版就能加的能力</strong>。
+        </p>
+      </div>
+      <div class="hero-console reveal from-right" aria-label="SLATE Teams 工作区预览">
+        <div class="console-top">
+          <span></span><span></span><span></span>
+          <strong>SLATE Teams · 智能体运行</strong>
+        </div>
+        <div class="console-shot">
+          <img src="../assets/zh/run.png" alt="砚的一次真实运行：提示词、模型说清的思路、两条标记为已执行的工具调用，以及顶部那条会话 token 用量" loading="eager" decoding="async">
+          <p class="console-caption">真机上的一次真实运行。模型这一环是本地桩，工具执行器、卡片背后的账本和用量条都是出厂那套。</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ Fact Ticker：页面上已经有出处的口径，做成一条底噪 ═══ -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track" data-lang="zh"></div>
+  </div>
+
+  <!-- ═══ The Loop ═══ -->
+  <section class="section loop" id="loop">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">循环</div>
+        <h2 class="section-title">所谓 Agent 产品，其实都只有一个循环</h2>
+        <p class="section-desc">模型是租来的，循环才是你真正在跑的东西。下面是砚的循环，一步一步拆开，以及盯住每一步的那个常量。</p>
+      </div>
+
+      <ol class="loop-steps" data-stagger-group>
+        <li class="loop-step reveal" data-stagger>
+          <span class="loop-n">01</span>
+          <h3>任何东西开跑之前，计划先上板</h3>
+          <p>一次调用没走到 <code>call.ready</code> 之前不会被画成步骤——被去重守卫拦下的计划连卡片都不会生成，所以白板不会偏离真正发生了什么。</p>
+        </li>
+        <li class="loop-step reveal" data-stagger>
+          <span class="loop-n">02</span>
+          <h3>参数还在写，就已经能读</h3>
+          <p>只流到一半的工具调用会实时预览，但在闭合标记到达前不可执行；<code>truncated &amp; !closed</code> 直接拒收。24 类命令模式会先要你确认。</p>
+        </li>
+        <li class="loop-step reveal" data-stagger>
+          <span class="loop-n">03</span>
+          <h3>每次调用都留下一行事后可读的记录</h3>
+          <p><code>UNIQUE(run_id, seq)</code> 配 <code>INSERT OR IGNORE</code>，重试只会原样重放，不会把一次调用记成两次。客户端把参数和输出裁到 2000 字符，服务端留 500 字符的摘要。</p>
+        </li>
+        <li class="loop-step reveal" data-stagger>
+          <span class="loop-n">04</span>
+          <h3>停止是一个状态，不是一句请求</h3>
+          <p>取消会同时掐断模型流和工具流；后端把「流已关闭」直接读成取消信号，并杀掉子进程。90s 空闲看门狗、180s 请求上限，空转 2 轮警告、4 轮退出。</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ═══ Evidence Strip ═══ -->
+  <section class="stats" aria-label="可在源码中核对的事实">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="reveal" data-stagger>
+          <div class="stat-num" data-count="0">0</div>
+          <div class="stat-label">账号 · 订阅</div>
+          <div class="stat-hint">模型费用你直接付给厂商，按他们的价。</div>
+        </div>
+        <div class="reveal" data-stagger>
+          <div class="stat-num" data-count="0">0</div>
+          <div class="stat-label">遥测上报点</div>
+          <div class="stat-hint">没有自作主张的上报。砚自己打出去的唯一例行请求是 GitHub Releases 的检查更新；CDN 资源在「诚实边界」里列着。</div>
+        </div>
+        <div class="reveal" data-stagger>
+          <div class="stat-num"><span data-count="4">0</span> 种</div>
+          <div class="stat-label">模型协议</div>
+          <div class="stat-hint">OpenAI Chat 与 Responses、Anthropic、Gemini——外加任意 OpenAI 兼容 URL 和本地模型。</div>
+        </div>
+        <div class="reveal" data-stagger>
+          <div class="stat-num" data-count="1">0</div>
+          <div class="stat-label">每块面板背后的账本</div>
+          <div class="stat-hint">工具卡片、白板步骤、会话总结——一份记录，三个视图。</div>
+        </div>
+        <div class="reveal" data-stagger>
+          <div class="stat-num" data-count="35">0</div>
+          <div class="stat-label">内置工具</div>
+          <div class="stat-hint">明细表在使用手册里。这一页只讲区别，不铺清单。</div>
+        </div>
+      </div>
+
+      <div class="spec reveal">
+        <div class="spec-head">
+          <h3>下面这些数字是仓库里的常量，不是形容词</h3>
+          <p>打开文件，核对取值。往后的版本若改了其中一个，这张表就该跟着改。</p>
+        </div>
+        <dl class="spec-grid">
+          <div class="spec-row">
+            <dt>单次扇出并行的子代理数</dt>
+            <dd><b>5</b><code>frontend/js/services/subagent.js</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>每个目标可研磨的轮数</dt>
+            <dd><b>10</b><code>frontend/js/services/grind.js</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>需先确认的高危命令模式</dt>
+            <dd><b>24</b><code>frontend/js/services/riskguard.js</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>流空闲超时 / 请求上限</dt>
+            <dd><b>90s · 180s</b><code>frontend/js/services/api.js</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>自检脚本（开发件，不随仓库分发）</dt>
+            <dd><b>69</b><code>留在本机</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>JavaScript 构建步骤</dt>
+            <dd><b>0</b><code>no package.json, no bundler</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>requirements.txt 的锁定行</dt>
+            <dd><b>21</b><code>requirements.txt · includes PyInstaller</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>backend 与 frontend 源码行数</dt>
+            <dd><b>60,000</b><code>81 .py + 87 .js · measured, not a constant</code></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ The Differences ═══ -->
+  <section class="section" id="difference">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">差异点</div>
+        <h2 class="section-title">四件托管 Agent 很难做到的事</h2>
+        <p class="section-desc">这不是比谁的功能多。下面四条都由同一件事推导出来——运行时归谁。每条也都能在本仓库里核对，所以请把它当代码评审，别当宣传文案。</p>
+      </div>
+
+      <article class="diff">
+        <div class="diff-head reveal from-left">
+          <span class="diff-index">01</span>
+          <h3>你的密钥不经过我们——因为没有「我们」。</h3>
+          <p>砚不持有主密钥，也不经任何厂商云中转。各厂商密钥你在本机粘贴一次，之后它随每次请求从你的电脑直达你选定的端点。</p>
+        </div>
+        <div class="diff-body">
+          <div class="contrast reveal from-left">
+            <div class="contrast-col them">
+              <span class="contrast-label">常见托管型 Agent</span>
+              <p>用量按厂商设定的积分计量，额度是他们给的。你的提示词、代码、文件被索引到他们的服务器上；这个月能试哪个模型，取决于他们开放了哪个。</p>
+            </div>
+            <div class="contrast-col ours">
+              <span class="contrast-label">砚</span>
+              <p>自带密钥、自带算力。任务中途就能换供应商——草稿用便宜的，定稿用强的；或者跑一个从不出房间的本模型。没有锁定，换供应商也没人向你收切换费。</p>
+            </div>
+          </div>
+          <div class="code-box reveal from-right">
+            <div class="code-box-bar"><i></i><i></i><i></i></div>
+            <pre><span class="c-muted"># backend/routers/proxy.py</span>
+<span class="c-text">_stream_openai / _stream_responses</span>
+<span class="c-text">_stream_anthropic / _stream_google</span>
+<span class="c-muted"># 密钥随每次请求一起进来</span>
+<span class="c-muted"># 服务端不留档、无账号</span>
+<span class="c-muted"># 这套代码里也没有登录页</span></pre>
+          </div>
+        </div>
+        <p class="diff-evidence reveal">证据： <code>backend/routers/proxy.py</code> <code>backend/routers/settings.py</code> <code>frontend/js/store.js</code></p>
+      </article>
+
+      <article class="diff">
+        <div class="diff-head reveal from-left">
+          <span class="diff-index">02</span>
+          <h3>每一步，都是事后可读的一行记录。</h3>
+          <p>只有一套循环内核，它按顺序发出事件：每一次规划、开始、完成、取消都写进本地账本。你在屏幕上看到的不是重新渲染的日志，而是这份存档记录投出来的影。</p>
+        </div>
+        <div class="diff-body">
+          <div class="contrast reveal from-left">
+            <div class="contrast-col them">
+              <span class="contrast-label">常见托管型 Agent</span>
+              <p>一个转圈的进度条，加最后一段 diff。第 14 轮跑歪了，把局面扭成那样的推理和半途调用，你已经取不回来。</p>
+            </div>
+            <div class="contrast-col ours">
+              <span class="contrast-label">砚</span>
+              <p>带序号校验的事件落盘，重试也不会把一次调用记成两次。同一条记录同时喂工具卡片、白板步骤卡和会话用量总结——一份真相，三个视图。</p>
+            </div>
+          </div>
+          <div class="code-box reveal from-right">
+            <div class="code-box-bar"><i></i><i></i><i></i></div>
+            <pre><span class="c-muted">-- data/chat_history.db</span>
+<span class="c-text">runs        (run_id, mode, wall_ms, …)</span>
+<span class="c-text">tool_events (run_id, seq, ts, type, tool, …)</span>
+<span class="c-text">  UNIQUE INDEX (run_id, seq)  -- INSERT OR IGNORE</span>
+<span class="c-muted">call.start → call.finish | call.cancel</span>
+<span class="c-muted">客户端把摘要裁到 2000 字符；</span>
+<span class="c-muted">服务端存前 500</span></pre>
+          </div>
+        </div>
+        <p class="diff-evidence reveal">证据： <code>frontend/js/services/agent_loop.js</code> <code>frontend/js/services/agent_ledger.js</code> <code>backend/routers/events.py</code></p>
+      </article>
+
+      <article class="diff">
+        <div class="diff-head reveal from-left">
+          <span class="diff-index">03</span>
+          <h3>停止就是停止，空转会自己发现。</h3>
+          <p>点停止会同时掐断模型流和工具流；对支持流式的工具，后端把「流被关掉」直接当作取消信号，并终止正在跑的子进程。外面再套四层，保证「慢」不会变成「卡死」。</p>
+        </div>
+        <div class="diff-body">
+          <div class="contrast reveal from-left">
+            <div class="contrast-col them">
+              <span class="contrast-label">常见托管型 Agent</span>
+              <p>「停止」只停界面，任务还在别处继续跑、继续烧 token。循环卡在同一个失败调用上空转，得靠人盯出来。</p>
+            </div>
+            <div class="contrast-col ours">
+              <span class="contrast-label">砚</span>
+              <p>90 秒无数据即断流、空返回自动退避重试、请求与工具 180 秒超时、界面看门狗强制恢复。重复调用直接去重：连续 2 轮警告、4 轮止损并给出原因。参数没写完只做预览，绝不进执行。</p>
+            </div>
+          </div>
+          <div class="code-box reveal from-right">
+            <div class="code-box-bar"><i></i><i></i><i></i></div>
+            <pre><span class="c-muted">// frontend/js/services/api.js</span>
+<span class="c-text">STREAM_IDLE_TIMEOUT_MS = 90000</span>
+<span class="c-text">STREAM_MAX_RETRIES     = 2</span>
+<span class="c-text">REQUEST_TIMEOUT_MS     = 180000</span>
+<span class="c-muted">// chat.js — 空转止损</span>
+<span class="c-text">WARN_ROUNDS = 2 · EXIT_ROUNDS = 4</span>
+<span class="c-muted">// skills.py — 关流即取消</span></pre>
+          </div>
+        </div>
+        <p class="diff-evidence reveal">证据： <code>backend/routers/skills.py</code> <code>frontend/js/services/inkstream.js</code> <code>frontend/js/components/chat.js</code></p>
+      </article>
+
+      <article class="diff">
+        <div class="diff-head reveal from-left">
+          <span class="diff-index">04</span>
+          <h3>加一项能力是丢一个文件，不是等一次发版。</h3>
+          <p>35 个工具开箱即用。再往上，往本地技能目录里扔进一个带 <code>SKILL.md</code> 的文件夹，下一条消息它就生效——@ 一下，上下文自己注入。</p>
+        </div>
+        <div class="diff-body">
+          <div class="contrast reveal from-left">
+            <div class="contrast-col them">
+              <span class="contrast-label">常见托管型 Agent</span>
+              <p>能力集就是厂商上个版本发的那些。想扩展，要么等别人的 roadmap，要么赌那套插件接口不被废弃。</p>
+            </div>
+            <div class="contrast-col ours">
+              <span class="contrast-label">砚</span>
+              <p>技能目录即插即用；MCP 客户端能接外部工具服务；砚自己也开着一个 MCP server，让别的 Agent 反过来调用它；其他 Agent 生态的技能目录可以原样导入。</p>
+            </div>
+          </div>
+          <div class="code-box reveal from-right">
+            <div class="code-box-bar"><i></i><i></i><i></i></div>
+            <pre><span class="c-muted"># data/skills/my-skill/SKILL.md</span>
+<span class="c-text">---</span>
+<span class="c-text">name: my-skill</span>
+<span class="c-text">description: 这条技能教会砚什么</span>
+<span class="c-text">---</span>
+<span class="c-muted"># 外接工具会以这样的名字出现：</span>
+<span class="c-text">mcp__{serverId}__{toolName}</span></pre>
+          </div>
+        </div>
+        <p class="diff-evidence reveal">证据： <code>backend/routers/skills.py</code> <code>backend/mcp_client.py</code> <code>backend/routers/mcp.py</code> <code>backend/skills/plugin_adapter.py</code></p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ═══ Capabilities ═══ -->
+  <!-- ═══ 议事厅 ═══ -->
+  <section class="section" id="room">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">议事厅</div>
+        <h2 class="section-title">一间有真人座位的讨论室</h2>
+        <p class="section-desc">几个模型互相辩难只是容易的那一半。让这件事成为"一场会"的，是桌边可以坐着人——他有轮次、有收件箱、有签字。</p>
+      </div>
+      <div class="scenes-grid" data-stagger-group>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">席位</div>
+          <h3>真人席位是一等席位</h3>
+          <p>模型之外可以加人。每个人有自己的轮次，说了什么记在他名下。他不发言时由你定：<em>一直等</em>、等够多少秒、<em>跳过并留痕</em>，或者让 AI 代笔——代笔那一行会写明是代笔，不会冒充他本人的话。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">票据</div>
+          <h3>一张只开这一场的邀请</h3>
+          <p>参会者在自己机器上点开邀请链接，进的是这一场的议事厅页，不是你工作台的缩小版。票据默认拒绝，只放行一张很短的清单；token 原文不落库，只留 sha256。你的模型 Key 和别的会话都不在这张票的作用域里。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">代收</div>
+          <h3>话先落收件箱，再由主持人代收</h3>
+          <p>与会者不直接写发言表：话先落进 inbox，由主持人页面按自己的顺序收进账。所以每一场只有一个写者，<code>UNIQUE(session_id, seq)</code> 这条幂等键成立，重试不会被记成两遍。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">拍板</div>
+          <h3>决策是签字签出来的，不是默认通过</h3>
+          <p>轮次会停在拍板点：已拍板 / 待拍板 / 未拍板。没人替你点头，签字发生在主持人那台机器上；谁在场（在线 / 暂离 / 未加入 / 归位）也一并留在记录里，翻账时看得清当时桌边坐着谁。</p>
+        </div>
+      </div>
+      <p class="diff-evidence reveal">证据： <code>backend/routers/teams.py</code> <code>frontend/teams.html</code> <code>frontend/js/teams/meeting.js</code> <code>frontend/js/components/team.js</code></p>
+    </div>
+  </section>
+
+  <section class="section" id="capabilities">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">能力半径</div>
+        <h2 class="section-title">这四条差异，落到日常是这五件事</h2>
+        <p class="section-desc">功能清单很长，这里故意不放。下面五个，才是「本地 + 可审计 + 自带密钥」换来的实际半径。</p>
+      </div>
+      <div class="scenes-grid" data-stagger-group>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">output</div>
+          <h3>交付物不止文字</h3>
+          <p>一轮任务结束在能发出去的文件上：<code>.pptx</code>、<code>.docx</code>、<code>.xlsx</code>、PDF 正文与表格提取、SVG 图表、二维码、单文件网页包。改文件时 UTF-8 / BOM / GB18030 都保住，中文和 emoji 不会被写坏。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">memory</div>
+          <h3>记忆留在自己盘上</h3>
+          <p>聊天历史进本地 SQLite，本地向量知识库，Obsidian 式笔记库带 <code>[[wiki-link]]</code> 反向链接，长期记忆跨会话自动沉淀。没有一份内容被上传去「优化体验」。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">remote</div>
+          <h3>离开工位也管得到</h3>
+          <p>开启局域网后，手机浏览器直接拿到一套专用移动版界面——同样的对话与工具循环，高危命令用底部抽屉确认。外加浏览器与桌面自动化，以及定时任务和事件驱动任务（文件变更 / git push / webhook）。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">council</div>
+          <h3>不止一个脑子</h3>
+          <p>几个模型先把方案辩一遍：提案、支持、反对、定夺，轻模型负责讨论、重模型负责拍板。DAG 流水线跑需求 → 拆解 → 编码 → 评审 → 总结，任务能拆时并行子代理同时开工。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">source</div>
+          <h3>源码可读，也不用构建</h3>
+          <p>原生 ES Module，零 npm、零打包，改完文件刷新即生效。整个前端就是交付物，这一页的每句话都能落到一个具体路径上。</p>
+        </div>
+      </div>
+      <p class="section-note reveal">想要全量清单？<a href="../guide.html#ch17">使用手册第 17 章</a>收着每项能力的一句话说明、35 个内置工具、适用场景与技术栈；其余章节讲每个面板的用法、8 套工作流模板和设置详解——中英双语同页切换。</p>
+    </div>
+  </section>
+
+  <!-- ═══ Honest Limits ═══ -->
+  <section class="section" id="limits">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">诚实边界</div>
+        <h2 class="section-title">同样的自主，也要你付出同样的代价</h2>
+        <p class="section-desc">只列优点的对比页就是宣传册。本地、单人、自带密钥是一笔交换——下面这几样，砚确实给不出。</p>
+      </div>
+      <div class="scenes-grid limits" data-stagger-group>
+        <div class="scene-card reveal" data-stagger>
+          <h3>没有托管工作区</h3>
+          <p>无组织、无共享评审、无服务端 API。它是一个人桌上的工具，加团队协作会改变它的形态。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>是护栏，不是监狱</h3>
+          <p>terminal 跑的是真 shell。24 类高危命令先弹窗问你、灾难性命令直接拦死，但黑名单是栏杆，不是隔离舱。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>密钥就在本地文件里</h3>
+          <p>模型密钥以明文 JSON 躺在数据目录里，没接系统钥匙串。能读那个目录的程序，就能读到它们。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>不算离线运行</h3>
+          <p>启动会从 CDN 加载 4 个资源：highlight.js 脚本与它的样式表、Mermaid、anime.js。内网隔离环境得先把它们镜像到本地。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>优先 Windows 与 macOS</h3>
+          <p>Windows 安装包（需 WebView2）与 macOS 镜像有发布，Linux 只能从源码运行，没有打包产物。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>局域网开的是整个应用</h3>
+          <p>一旦开启遥控，那个网络上的设备就能驱动包括 terminal 在内的全部功能，只靠一个 token 和可选密码守。默认不开。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>长活跟它的进程同生共死</h3>
+          <p>后台终端任务活在 SLATE Teams 后端进程里，后台子代理批次活在浏览器页面里。刷新或退出，这些活就停了——只留下 <code>data/bg_tasks/</code> 里的日志，重启不会接着跑。</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>并行只在跨项目时成立</h3>
+          <p>两个不同项目可以同时生成，找不到槽位的发送会进队列而不是被丢掉。但<em>同一个</em>项目内的两场仍然串行——worktree 隔离加合并审查只是设计，还没落地。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Quick Start ═══ -->
+  <section class="section" id="start">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">快速上手</div>
+        <h2 class="section-title">三步，然后自己判断</h2>
+        <p class="section-desc">第一步就够不写代码的人用。第二、三步留给打算先读懂循环再信任它的人。</p>
+      </div>
+
+      <div class="start-steps" data-stagger-group>
+        <div class="step reveal" data-stagger>
+          <div class="step-num">01</div>
+          <h4>安装或克隆</h4>
+          <p>Releases 里的 Windows 用户级安装包，不要管理员权限，卸载不留残渣。想读源码：</p>
+          <code>git clone https://github.com/CaryWang1234/SLATE-Teams.git</code>
+        </div>
+        <div class="step reveal" data-stagger>
+          <div class="step-num">02</div>
+          <h4>启动</h4>
+          <p>从源码运行需要 Python 3.13+，两条命令拉起本地服务：</p>
+          <code>pip install -r requirements.txt<br>start.bat &nbsp;# 或 ./start.sh</code>
+        </div>
+        <div class="step reveal" data-stagger>
+          <div class="step-num">03</div>
+          <h4>粘贴一个密钥</h4>
+          <p>填任意一个你已有的模型密钥；或者指向本地的 Ollama / LM Studio，一个密钥都不用填。然后打开：</p>
+          <code>http://127.0.0.1:8000</code>
+        </div>
+      </div>
+      <p class="section-note reveal">没有要注册的东西，也没有要迁移的东西。第一次运行起，你的历史、记忆、技能和用量数据就只是本机磁盘上的文件。</p>
+    </div>
+  </section>
+
+  <!-- ═══ CTA ═══ -->
+  <section class="cta">
+    <div class="container reveal">
+      <h2>拿它跟你已经在付费的那个 Agent 比一次。</h2>
+      <p>装好砚，填一个你手里就有的密钥，给两边同一道题。循环、账本和边界都摊在开源里——MIT 协议，欢迎逐行审计。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/CaryWang1234/SLATE-Teams/releases/latest" target="_blank" rel="noopener">下载安装包</a>
+        <a class="btn btn-ghost" href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">读源码</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Footer ═══ -->
+  <footer class="footer">
+    <div class="container">
+      <p class="ink-line">SLATE Teams —— 把灵感研磨成能交付的方案。</p>
+      <p>
+        <a href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">GitHub</a> ·
+        <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank" rel="noopener">Releases</a> ·
+        <a href="https://github.com/CaryWang1234/SLATE-Teams/issues" target="_blank" rel="noopener">Issues</a> ·
+        <a href="../guide.html">使用手册</a> ·
+        <a href="https://docs.slate-ai.site/" target="_blank" rel="noopener">文档站</a>
+      </p>
+      <p style="margin-top: 8px;">砚不自带模型，与任何模型厂商无隶属关系。· MIT 协议 · © 2026 Cary</p>
+    </div>
+  </footer>
+
+  <script>
+    const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ── 双主题切换 ──
+    const themeBtn = document.getElementById("theme-toggle");
+    const applyTheme = (t) => {
+      document.body.dataset.theme = t;
+      themeBtn.textContent = t === "light" ? "☀" : "☾";
+      try { localStorage.setItem("slate-site-theme", t); } catch {}
+    };
+    let saved = "dark";
+    try { saved = localStorage.getItem("slate-site-theme") || "dark"; } catch {}
+    applyTheme(saved);
+    themeBtn.addEventListener("click", () => {
+      applyTheme(document.body.dataset.theme === "light" ? "dark" : "light");
+    });
+
+    // ── 移动端抽屉导航 ──
+    const hamburger = document.getElementById("nav-hamburger");
+    const drawerOverlay = document.getElementById("mobile-drawer-overlay");
+    const drawer = document.getElementById("mobile-drawer");
+    const drawerClose = document.getElementById("drawer-close");
+
+    function openDrawer() {
+      drawerOverlay.classList.add("open");
+      hamburger.classList.add("active");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeDrawer() {
+      drawerOverlay.classList.remove("open");
+      hamburger.classList.remove("active");
+      document.body.style.overflow = "";
+    }
+
+    hamburger?.addEventListener("click", () => {
+      drawerOverlay.classList.contains("open") ? closeDrawer() : openDrawer();
+    });
+
+    drawerClose?.addEventListener("click", closeDrawer);
+
+    // 点击遮罩关闭
+    drawerOverlay?.addEventListener("click", (e) => {
+      if (e.target === drawerOverlay) closeDrawer();
+    });
+
+    // 点击抽屉内链接后关闭
+    drawer?.querySelectorAll("a[href^='#']").forEach((link) => {
+      link.addEventListener("click", () => {
+        closeDrawer();
+      });
+    });
+
+    // ESC 键关闭
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && drawerOverlay?.classList.contains("open")) closeDrawer();
+    });
+
+    // ── 错落入场：同组元素按序号递增 delay ──
+    document.querySelectorAll("[data-stagger-group]").forEach((group) => {
+      const items = group.querySelectorAll("[data-stagger], .reveal");
+      items.forEach((el, i) => {
+        el.style.setProperty("--rd", (i * 0.07).toFixed(2) + "s");
+      });
+    });
+
+    // ── 滚动入场（IntersectionObserver） ──
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in");
+          observer.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+
+    // ── 被"跳过"的区块兜底 ──
+    // IO 只在相交状态变化的那一帧派发：一次大滚动 / 拖滚动条 / 按 End / 带滚动位置刷新，
+    // 会让区块从视口下方直接变成视口上方，回调一次都不来 —— .reveal 于是永久停在
+    // opacity:0（整段看不见），[data-count] 永久写着 0（把真数说成 0，更糟）。
+    // 兜底口径：谁的盒子已经越过视口上沿，就按它"本来就该看得见"处理。
+    const countEl = (el) => {
+      if (el.dataset.counted) return;
+      el.dataset.counted = "1";
+      animateCount(el);
+    };
+    let rescuing = false;
+    const rescueSkipped = () => {
+      rescuing = false;
+      document.querySelectorAll(".reveal:not(.in), [data-count]").forEach((el) => {
+        if (el.getBoundingClientRect().bottom >= 0) return;
+        if (el.classList.contains("reveal")) {
+          el.classList.add("in");
+          observer.unobserve(el);
+        }
+        if (el.hasAttribute("data-count")) {
+          countObserver.unobserve(el);
+          countEl(el);
+        }
+      });
+    };
+    window.addEventListener("scroll", () => {
+      if (!rescuing) { rescuing = true; requestAnimationFrame(rescueSkipped); }
+    }, { passive: true });
+    window.addEventListener("resize", () => requestAnimationFrame(rescueSkipped));
+    window.addEventListener("load", () => requestAnimationFrame(rescueSkipped));
+
+    // ── 数字计数动画 ──
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+    function animateCount(el) {
+      const target = parseInt(el.dataset.count, 10) || 0;
+      if (REDUCED || target === 0) { el.textContent = target; return; }
+      const dur = 1400, t0 = performance.now();
+      const tick = (now) => {
+        const p = Math.min((now - t0) / dur, 1);
+        el.textContent = Math.round(easeOutCubic(p) * target);
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+    const countObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          animateCount(entry.target);
+          countObserver.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.4 });
+    document.querySelectorAll("[data-count]").forEach((el) => countObserver.observe(el));
+    // 带滚动位置刷新时，视口上方那批 IO 一次都不会派发 → 起手就按盒子位置补一次
+    // （放在这里而不是上面：countObserver 得先存在）
+    requestAnimationFrame(rescueSkipped);
+
+    // ── Hero 打字机 ──
+    const typeEl = document.getElementById("hero-type");
+    const phrases = [
+      "你的密钥、你的算力，不欠谁的额度。",
+      "每一次工具调用，都是本地账本里的一行。",
+      "按下停止，断流也杀掉进程。",
+      "加一项能力是丢一个文件，不是等一次发版。",
+    ];
+    if (REDUCED) {
+      typeEl.textContent = phrases[0];
+    } else {
+      let pi = 0, ci = 0, deleting = false;
+      const step = () => {
+        const phrase = phrases[pi];
+        if (!deleting) {
+          ci++;
+          typeEl.textContent = phrase.slice(0, ci);
+          if (ci === phrase.length) { deleting = true; setTimeout(step, 2200); return; }
+          setTimeout(step, 85);
+        } else {
+          ci--;
+          typeEl.textContent = phrase.slice(0, ci);
+          if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; setTimeout(step, 400); return; }
+          setTimeout(step, 30);
+        }
+      };
+      setTimeout(step, 600);
+    }
+
+    // ── 复制 clone 命令 ──
+    const cloneCmd = document.getElementById("clone-cmd");
+    const copyBtn = document.getElementById("copy-clone");
+    if (cloneCmd && copyBtn) {
+      const flash = (label) => {
+        copyBtn.textContent = label;
+        copyBtn.classList.add("done");
+        setTimeout(() => { copyBtn.textContent = "复制"; copyBtn.classList.remove("done"); }, 1800);
+      };
+      const legacy = () => {
+        const range = document.createRange();
+        range.selectNodeContents(cloneCmd);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        sel.removeAllRanges();
+        if (ok) flash("已复制");
+      };
+      copyBtn.addEventListener("click", () => {
+        const text = cloneCmd.textContent.trim();
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(() => flash("已复制"), legacy);
+        } else {
+          legacy();
+        }
+      });
+    }
+
+    // ── 把下载按钮改写成这位访客真正能跑的那个安装包 ──
+    const dlBtn = document.getElementById("btn-dl");
+    if (dlBtn) {
+      const raw = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+      const os = /win/i.test(raw) ? "Windows" : /mac|iphone|ipad/i.test(raw) ? "macOS" : "";
+      if (os) dlBtn.textContent = "下载 " + os + " 版";
+    }
+
+    // ── Hero 网格视差 + 滚动进度 + 导航阴影（合并为一个 rAF 循环） ──
+    const heroGrid = document.getElementById("hero-grid");
+    const progressBar = document.getElementById("progress-bar");
+    const nav = document.getElementById("nav");
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        if (!REDUCED && heroGrid) heroGrid.style.transform = `translateY(${y * 0.35}px)`;
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        if (progressBar) progressBar.style.width = (max > 0 ? (y / max) * 100 : 0) + "%";
+        if (nav) nav.classList.toggle("scrolled", y > 12);
+        ticking = false;
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js" defer></script>
+  <script src="../motion.js" defer></script>
+
+</body>
+</html>

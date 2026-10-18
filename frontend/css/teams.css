@@ -1,0 +1,173 @@
+/* SLATE Teams 议事厅（与会者页）的样式。
+   只服务这一页：不加载工作台那份 style.css（一万三千行，与会者用不到）。
+   配色跟随系统深浅，令牌名与主应用保持同一套叫法，方便对照。
+   这一页是人那一侧唯一看得见的门面，所以它涂的是本产品的红墨，不是原作的金。 */
+
+:root {
+  --bg: #F1F1EF;
+  --bg-alt: #E6E6E3;
+  --border: #D7D7D3;
+  --text: #191A1C;
+  --text-muted: #626570;
+  --accent-bg: #97342A;
+  --accent-fg: #F7F2F1;
+  --gold: #97342A;
+  --gold-dim: rgba(151, 52, 42, 0.09);
+  --ok: #2D6A3F;
+  --radius: 0px;
+  --label-tracking: 0.16em;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17181B;
+    --bg-alt: #1D1E22;
+    --border: #2E3035;
+    --text: #E4E4E6;
+    --text-muted: #86878D;
+    --accent-bg: #CC7466;
+    --accent-fg: #17100E;
+    --gold: #CC7466;
+    --gold-dim: rgba(204, 116, 102, 0.11);
+    --ok: #6FBF9A;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.hidden { display: none !important; }
+
+#mh-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+#mh-title { font-weight: 600; letter-spacing: 0.02em; }
+#mh-me { flex: 1; min-width: 0; color: var(--text-muted); font-size: 12px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mh-presence {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mh-banner {
+  padding: 10px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+
+.mh-banner.mine {
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+
+.mh-stream {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mh-round {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: var(--label-tracking);
+}
+
+.mh-turn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  background: var(--bg-alt);
+}
+
+.mh-turn.mine { border-color: var(--ok); }
+
+.mh-turn-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.mh-turn-name { font-weight: 600; }
+.mh-turn-badge { font-size: 11px; color: var(--text-muted); }
+.mh-turn-target { font-size: 11px; color: var(--text-muted); }
+.mh-turn-body { white-space: pre-wrap; word-break: break-word; }
+
+.mh-notice { color: var(--text-muted); font-size: 12px; padding-left: 4px; }
+
+.mh-composer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+}
+
+.mh-composer-row { display: flex; gap: 8px; align-items: flex-end; }
+
+.mh-action, .mh-target, .mh-text {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+}
+
+.mh-action { flex-shrink: 0; }
+.mh-target { flex-shrink: 0; max-width: 40%; }
+.mh-text { flex: 1; resize: vertical; min-height: 40px; }
+
+.mh-send {
+  flex-shrink: 0;
+  border: 1px solid var(--accent-bg);
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mh-send:disabled { opacity: 0.5; cursor: default; }
+
+.mh-hint { font-size: 11px; color: var(--text-muted); min-height: 16px; }

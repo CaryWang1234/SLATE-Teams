@@ -1,0 +1,1009 @@
+/* ═══════════════════════════════════════════
+   SLATE Mobile — 手机遥控专属 UI
+   独立于桌面 style.css；复用其 :root / [data-theme] 变量
+   ═══════════════════════════════════════════ */
+
+/* ── 移动端 token ─────────────────────── */
+:root {
+  /* 触屏仍要留圆角，但比原作那档药丸收得很紧——这一版读起来是"格线"，不是"卡片堆" */
+  --m-radius-lg: 6px;
+  --m-radius-md: 4px;
+  --m-radius-sm: 2px;
+  --m-tabbar-h: 60px;
+  --m-topbar-h: 52px;
+  --m-font-size: 15px;
+  --m-sheet-max-h: 72vh;
+  --kb-offset: 0px;
+  --m-touch: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] {
+  --m-touch: rgba(255, 255, 255, 0.05);
+}
+
+/* ── Reset / 基础 ─────────────────────── */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-main);
+  font-size: var(--m-font-size);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active {
+  filter: brightness(0.92);
+}
+
+textarea {
+  font-family: inherit;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ── 顶部状态条 ──────────────────────── */
+#m-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--m-topbar-h) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 16px;
+  padding-right: 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  z-index: 40;
+}
+
+.m-topbar-title {
+  font-weight: 600;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60vw;
+  letter-spacing: 0.5px;
+}
+
+.m-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.m-topbar-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--m-radius-md);
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  color: var(--text-secondary);
+}
+
+.m-topbar-btn:active {
+  background: var(--m-touch);
+}
+
+/* ── 视图容器 ────────────────────────── */
+#m-views {
+  position: fixed;
+  top: calc(var(--m-topbar-h) + env(safe-area-inset-top));
+  bottom: calc(var(--m-tabbar-h) + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+}
+
+.m-view {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.m-view.active {
+  display: block;
+}
+
+/* ── 聊天视图 ────────────────────────── */
+#view-chat {
+  display: none;
+  overflow: hidden;
+}
+
+#view-chat.active {
+  display: block;
+}
+
+.m-chat-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 0 16px;
+  /* 输入条悬浮其上，滚动区底部留出空间 */
+  margin-bottom: 0;
+}
+
+/* 空状态 */
+.m-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--text-muted);
+}
+
+.m-empty-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--m-radius-lg);
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+/* ── 消息气泡 ────────────────────────── */
+.m-msg {
+  display: flex;
+  margin: 10px 12px;
+}
+
+.m-msg-user {
+  justify-content: flex-end;
+}
+
+.m-msg-assistant {
+  justify-content: flex-start;
+}
+
+/* 压缩摘要折叠条 */
+.m-msg-system { justify-content: center; }
+
+.m-summary-fold {
+  width: 100%;
+  border: 1px dashed var(--border);
+  border-radius: var(--m-radius-sm);
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.m-summary-fold > summary {
+  padding: 7px 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.m-summary-fold > summary::-webkit-details-marker { display: none; }
+
+.m-summary-body {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  max-height: 45vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.m-bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: var(--m-radius-lg);
+  line-height: 1.65;
+  word-break: break-word;
+  user-select: text;
+}
+
+.m-msg-user .m-bubble {
+  background: var(--msg-user-bg);
+  color: var(--msg-user-fg);
+  border-bottom-right-radius: var(--m-radius-sm);
+}
+
+.m-msg-assistant .m-bubble {
+  background: var(--msg-asst-bg);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: var(--m-radius-sm);
+}
+
+.m-bubble p {
+  margin: 0 0 8px;
+}
+
+.m-bubble p:last-child {
+  margin-bottom: 0;
+}
+
+.m-bubble code {
+  font-family: var(--font-code);
+  font-size: 0.9em;
+  background: var(--inline-code-bg);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.m-bubble pre {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  padding: 10px 12px;
+  border-radius: var(--m-radius-sm);
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.m-bubble pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.m-bubble ul, .m-bubble ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.m-bubble table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 0.92em;
+}
+
+.m-bubble th, .m-bubble td {
+  border: 1px solid var(--border);
+  padding: 5px 9px;
+}
+
+.m-bubble blockquote {
+  border-left: 3px solid var(--gold);
+  padding-left: 10px;
+  margin: 8px 0;
+  color: var(--text-secondary);
+}
+
+.m-bubble a {
+  color: var(--gold);
+}
+
+/* 消息 meta（模型名 / 时间） */
+.m-msg-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 2px 4px 0;
+}
+
+.m-msg-user .m-msg-meta {
+  text-align: right;
+}
+
+/* 流式光标 */
+.m-stream-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--gold);
+  margin-left: 2px;
+  vertical-align: -2px;
+  animation: m-blink 0.9s step-start infinite;
+}
+
+@keyframes m-blink {
+  50% { opacity: 0; }
+}
+
+/* ── 思考卡片 ────────────────────────── */
+.m-thinking {
+  margin: 8px 0 4px;
+  border: 1px dashed var(--border);
+  border-radius: var(--m-radius-sm);
+  background: var(--bg-alt);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.m-thinking-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.m-thinking-body {
+  padding: 0 12px 10px;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 40vh;
+  overflow-y: auto;
+  user-select: text;
+}
+
+/* 手机侧收起思考过程靠切 .m-thinking.collapsed（桌面那套叫 .thinking-panel，样式不共用） */
+.m-thinking.collapsed .m-thinking-body {
+  display: none;
+}
+
+
+/* ── 工具卡片 ────────────────────────── */
+.m-tool-card {
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--m-radius-md);
+  background: var(--bg-alt);
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.m-tool-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  min-height: 38px;
+}
+
+.m-tool-name {
+  font-weight: 600;
+  font-family: var(--font-code);
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
+
+.m-tool-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.m-tool-summary {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40vw;
+}
+
+.m-tool-body {
+  padding: 4px 12px 10px;
+  border-top: 1px solid var(--border);
+  display: none;
+}
+
+.m-tool-card.open .m-tool-body {
+  display: block;
+}
+
+.m-tool-body pre {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  padding: 8px 10px;
+  border-radius: var(--m-radius-sm);
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 6px 0 0;
+  user-select: text;
+}
+
+.m-tool-spin {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: m-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes m-spin {
+  to { transform: rotate(360deg); }
+}
+
+.m-tool-ok { color: #4caf50; }
+.m-tool-err { color: #e57373; }
+
+/* ── 聊天输入条 ──────────────────────── */
+#m-chat-input-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--m-tabbar-h) + env(safe-area-inset-bottom) + var(--kb-offset));
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  z-index: 30;
+  transition: bottom 0.15s ease;
+}
+
+.m-chat-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+#m-chat-input {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: var(--m-radius-md);
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: var(--m-font-size);
+  line-height: 1.5;
+  padding: 10px 14px;
+  min-height: 42px;
+  max-height: 132px;
+  outline: none;
+  overflow-y: auto;
+  user-select: text;
+}
+
+#m-chat-input:focus {
+  border-color: var(--gold);
+}
+
+.m-send-btn {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  font-size: 18px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.m-send-btn:disabled {
+  opacity: 0.45;
+}
+
+/* @提及浮层 */
+.m-mention-overlay {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(100% + 6px);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--m-radius-md);
+  max-height: 40vh;
+  overflow-y: auto;
+  z-index: 35;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+
+.m-mention-item {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.m-mention-item:last-child {
+  border-bottom: none;
+}
+
+.m-mention-item.active {
+  background: var(--gold-dim);
+}
+
+.m-mention-kind {
+  font-size: 11px;
+  color: var(--gold);
+  font-family: var(--font-code);
+  flex-shrink: 0;
+}
+
+.m-mention-label {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* @ 列表里的说明列：没规则时长描述会把整行顶出屏幕（m-chat-input.js 只在有 desc 时建这个节点） */
+.m-mention-desc {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ── 底部导航 ────────────────────────── */
+#m-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--m-tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  z-index: 40;
+}
+
+.m-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+  position: relative;
+}
+
+.m-tab::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: transparent;
+}
+
+.m-tab.active {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.m-tab.active::before {
+  background: var(--gold);
+}
+
+.m-tab-icon {
+  font-size: 19px;
+  line-height: 1;
+}
+
+/* ── 列表（会话 / 记忆 / 待办） ────────── */
+.m-list-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.m-btn-sm {
+  padding: 7px 14px;
+  border-radius: var(--m-radius-md);
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  font-size: 13px;
+}
+
+.m-list {
+  padding: 4px 12px 20px;
+}
+
+.m-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.m-list-item:active {
+  background: var(--m-touch);
+}
+
+/* 正看着哪一场：JS 给列表项加 .active（state 类，跟上面按下的 :active 是两回事） */
+.m-list-item.active {
+  background: var(--gold-dim);
+}
+
+
+.m-list-item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.m-list-item-title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.m-list-item-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.m-list-item-action {
+  color: var(--text-muted);
+  padding: 8px;
+  border-radius: var(--m-radius-sm);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.m-list-empty {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.m-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--gold-dim);
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+/* ── 设置面板 ────────────────────────── */
+.m-settings-body {
+  padding: 14px 16px 28px;
+}
+
+.m-setting-group {
+  margin-bottom: 18px;
+}
+
+.m-setting-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.m-setting-card {
+  border: 1px solid var(--border);
+  border-radius: var(--m-radius-md);
+  background: var(--bg-alt);
+  overflow: hidden;
+}
+
+.m-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.m-setting-row:last-child {
+  border-bottom: none;
+}
+
+.m-setting-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.m-setting-row-title {
+  font-weight: 500;
+  font-size: 14.5px;
+}
+
+.m-setting-row-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.m-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: transparent;
+  flex-shrink: 0;
+}
+
+.m-setting-row.active .m-check {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ── 底部 sheet ───────────────────────── */
+.m-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-backdrop);
+  z-index: 90;
+  animation: m-fade-in 0.15s ease;
+}
+
+.m-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 95;
+  background: var(--bg);
+  border-radius: var(--m-radius-lg) var(--m-radius-lg) 0 0;
+  border-top: 1px solid var(--border);
+  max-height: var(--m-sheet-max-h);
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.22s ease;
+}
+
+.m-sheet.open {
+  transform: translateY(0);
+}
+
+.m-sheet-grab {
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.m-sheet-grab::before {
+  content: "";
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text-faint);
+}
+
+.m-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.m-sheet-title {
+  font-weight: 600;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.m-sheet-close {
+  color: var(--text-muted);
+  font-size: 20px;
+  padding: 4px 8px;
+  flex-shrink: 0;
+}
+
+.m-sheet-body {
+  overflow-y: auto;
+  padding: 12px 16px;
+  user-select: text;
+  -webkit-overflow-scrolling: touch;
+}
+
+.m-sheet-footer {
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.m-sheet-btn {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: var(--m-radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+}
+
+.m-sheet-btn-primary {
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  border-color: transparent;
+}
+
+.m-sheet-btn-danger {
+  background: #c0392b;
+  color: #fff;
+  border-color: transparent;
+}
+
+.m-sheet-btn:disabled {
+  opacity: 0.5;
+}
+
+@keyframes m-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* diff 预览 */
+.m-diff-pre {
+  font-family: var(--font-code);
+  font-size: 12px;
+  line-height: 1.55;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border-radius: var(--m-radius-sm);
+  padding: 10px 12px;
+  overflow-x: auto;
+  white-space: pre;
+  user-select: text;
+}
+
+.m-diff-add {
+  background: rgba(76, 175, 80, 0.16);
+  color: #81c784;
+}
+
+.m-diff-del {
+  background: rgba(229, 115, 115, 0.16);
+  color: #e57373;
+}
+
+.m-diff-hunk {
+  color: var(--gold);
+}
+
+/* 高危确认 */
+.m-risk-command {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font-family: var(--font-code);
+  font-size: 13px;
+  border: 1px solid rgba(229, 115, 115, 0.5);
+  border-radius: var(--m-radius-sm);
+  padding: 10px 12px;
+  margin: 10px 0;
+  word-break: break-all;
+  user-select: text;
+}
+
+.m-risk-reason {
+  color: #e57373;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.m-risk-explain {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 审批 sheet 现在三种问法共用（高危命令 / 逐条确认的命令 / 逐条确认的联网），
+   字段名和"批准后会发生什么"都得有自己的位置 */
+.m-risk-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.m-risk-note {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+/* ── Toast ───────────────────────────── */
+#m-toast-root {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--m-tabbar-h) + 20px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 120;
+  pointer-events: none;
+}
+
+.m-toast {
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  padding: 10px 18px;
+  border-radius: 99px;
+  font-size: 13.5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  max-width: 86vw;
+  text-align: center;
+}
+
+.m-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── 二维码 ──────────────────────────── */
+.m-qr {
+  background: #fff;
+  border-radius: var(--m-radius-sm);
+  padding: 10px;
+  display: inline-block;
+}
+
+.m-qr img, .m-qr svg {
+  display: block;
+  width: 180px;
+  height: 180px;
+}
+
+/* ── 禁用滚动条美化（保持桌面风格） ───── */
+.m-chat-scroll::-webkit-scrollbar,
+.m-view::-webkit-scrollbar,
+.m-sheet-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.m-chat-scroll::-webkit-scrollbar-thumb,
+.m-view::-webkit-scrollbar-thumb,
+.m-sheet-body::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 2px;
+}

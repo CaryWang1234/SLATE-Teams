@@ -1,0 +1,26 @@
+# Backend
+fastapi
+uvicorn[standard]
+httpx
+python-multipart
+aiofiles
+aiosqlite
+ddgs
+python-pptx
+python-docx
+openpyxl
+pdfplumber
+qrcode
+playwright
+pyautogui
+pyperclip
+pygetwindow
+trafilatura
+psutil
+
+# Desktop wrapper
+pywebview
+pythonnet
+
+# Packaging
+pyinstaller

@@ -1,0 +1,89 @@
+{
+  "id": "product-requirements-flow",
+  "name": "产品需求流程",
+  "description": "从产品想法出发，依次进行用户分析、功能拆解、优先级排序，最终输出结构化需求文档。",
+  "nodes": [
+    {
+      "id": "idea",
+      "name": "想法梳理",
+      "role": "creative",
+      "model": "",
+      "skill": "",
+      "prompt": "你是产品经理。请将以下产品想法梳理为：1) 核心价值主张（一句话）2) 目标用户画像 3) 解决的核心痛点 4) 成功指标。只输出梳理结果，不要寒暄。\n\n产品想法：\n{{task}}",
+      "inputs": {
+        "task": "$input"
+      },
+      "output_key": "idea_brief",
+      "max_tokens": 800,
+      "temperature": 0.5
+    },
+    {
+      "id": "user_story",
+      "name": "用户故事",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是用户体验专家。基于以下产品想法，编写 5-8 个核心用户故事（格式：作为[角色]，我想要[功能]，以便[价值]），覆盖主要使用场景。只输出用户故事，不要寒暄。\n\n产品想法：\n{{idea_brief}}",
+      "inputs": {
+        "idea_brief": "$idea"
+      },
+      "output_key": "user_stories",
+      "max_tokens": 1000,
+      "temperature": 0.5
+    },
+    {
+      "id": "features",
+      "name": "功能拆解",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是产品架构师。基于以下产品想法和用户故事，拆解为功能模块列表，每个模块包含：功能名称、描述、涉及的用户故事、预估复杂度（低/中/高）。只输出拆解结果，不要寒暄。\n\n产品想法：\n{{idea_brief}}\n\n用户故事：\n{{user_stories}}",
+      "inputs": {
+        "idea_brief": "$idea",
+        "user_stories": "$user_story"
+      },
+      "output_key": "features",
+      "max_tokens": 1200,
+      "temperature": 0.4
+    },
+    {
+      "id": "priority",
+      "name": "优先级排序",
+      "role": "decider",
+      "model": "",
+      "skill": "",
+      "prompt": "你是产品优先级决策者。基于以下功能列表，使用 MoSCoW 方法（Must/Should/Could/Won't）进行优先级排序，给出 MVP 范围建议和迭代路线图。只输出排序结果，不要寒暄。\n\n产品想法：\n{{idea_brief}}\n\n功能列表：\n{{features}}",
+      "inputs": {
+        "idea_brief": "$idea",
+        "features": "$features"
+      },
+      "output_key": "priority",
+      "max_tokens": 1000,
+      "temperature": 0.3
+    },
+    {
+      "id": "prd",
+      "name": "需求文档",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是需求文档撰写专家。请将以上所有分析整合为一份结构化 PRD（产品需求文档），包含：概述、目标用户、用户故事、功能清单（含优先级）、MVP 范围、成功指标。只输出文档本身，不要寒暄。\n\n产品想法：\n{{idea_brief}}\n\n用户故事：\n{{user_stories}}\n\n功能列表：\n{{features}}\n\n优先级：\n{{priority}}",
+      "inputs": {
+        "idea_brief": "$idea",
+        "user_stories": "$user_story",
+        "features": "$features",
+        "priority": "$priority"
+      },
+      "output_key": "prd",
+      "max_tokens": 2500,
+      "temperature": 0.3
+    }
+  ],
+  "edges": [
+    { "from": "idea", "to": "user_story" },
+    { "from": "idea", "to": "features" },
+    { "from": "user_story", "to": "features" },
+    { "from": "features", "to": "priority" },
+    { "from": "priority", "to": "prd" }
+  ]
+}

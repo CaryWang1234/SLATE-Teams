@@ -1,0 +1,34 @@
+/.tmp-chrome-codex
+/.tmp-chrome-codex-*
+/dist
+/build
+*/__pycache__
+**/__pycache__/
+*.pyc
+desktop_backend.log
+/data/chat_history.db
+/data/chat_history.db-*
+/data/knowledge.db
+/data/knowledge.db-*
+repo-doctor.py
+/data/webview_profile
+/uiexample
+/exampleui
+/.slate
+/data/desktop_state.json
+/data/grind_sessions
+/data/outputs
+/data/typing_custom.txt
+/outputs
+/.qoder
+/.diag
+/installer/*.exe
+# 一次性的计划 / 设计 / 审查文档：本机留存，不作为仓库内容分发
+/ACTIONS-DESIGN.md
+/PROJECT-TASKS-DESIGN.md
+/DEEP_RESEARCH_AI-AGENT-TOOL-CALLING.md
+/BUG_REPORT.md
+# 开发期自检/生成脚本：本机留存，不进仓库分发。
+# 例外：check_mojibake.mjs 由 .github/workflows/mojibake.yml 在 CI 上跑，必须留在仓库里。
+/scripts/*
+!/scripts/check_mojibake.mjs

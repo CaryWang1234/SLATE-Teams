@@ -1,0 +1,87 @@
+{
+  "id": "bug-investigation-flow",
+  "name": "Bug 排查流程",
+  "description": "从 Bug 描述出发，并行分析日志、代码和环境，最后汇总根因定位与修复方案。",
+  "nodes": [
+    {
+      "id": "describe",
+      "name": "Bug 描述",
+      "role": "analyst",
+      "model": "",
+      "skill": "",
+      "prompt": "你是 Bug 分析专家。请根据以下 Bug 描述，提取关键信息：1) 复现步骤 2) 预期行为 vs 实际行为 3) 影响范围 4) 可能的触发条件。只输出分析结果，不要寒暄。\n\nBug 描述：\n{{task}}",
+      "inputs": {
+        "task": "$input"
+      },
+      "output_key": "bug_analysis",
+      "max_tokens": 800,
+      "temperature": 0.3
+    },
+    {
+      "id": "log_analysis",
+      "name": "日志分析",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是日志分析专家。基于以下 Bug 分析，列出需要检查的日志关键点和可能的错误模式（错误码、异常堆栈、时间戳关联），给出排查方向。只输出分析结果，不要寒暄。\n\nBug 分析：\n{{bug_analysis}}",
+      "inputs": {
+        "bug_analysis": "$describe"
+      },
+      "output_key": "log_hints",
+      "max_tokens": 900,
+      "temperature": 0.4
+    },
+    {
+      "id": "code_analysis",
+      "name": "代码分析",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是代码排查专家。基于以下 Bug 分析，指出最可能出问题的代码区域、函数调用链和常见编码错误模式，给出代码级排查建议。只输出分析结果，不要寒暄。\n\nBug 分析：\n{{bug_analysis}}",
+      "inputs": {
+        "bug_analysis": "$describe"
+      },
+      "output_key": "code_hints",
+      "max_tokens": 900,
+      "temperature": 0.4
+    },
+    {
+      "id": "env_analysis",
+      "name": "环境分析",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是环境排查专家。基于以下 Bug 分析，列出需要检查的环境因素：依赖版本、配置差异、网络/权限问题、并发/竞态条件，给出环境级排查建议。只输出分析结果，不要寒暄。\n\nBug 分析：\n{{bug_analysis}}",
+      "inputs": {
+        "bug_analysis": "$describe"
+      },
+      "output_key": "env_hints",
+      "max_tokens": 800,
+      "temperature": 0.4
+    },
+    {
+      "id": "root_cause",
+      "name": "根因定位",
+      "role": "decider",
+      "model": "",
+      "skill": "",
+      "prompt": "你是 Bug 根因定位专家。请综合日志、代码和环境三个方向的分析，给出：1) 最可能的根因（排序）2) 验证方法 3) 修复方案（短期 + 长期）4) 回归测试建议。只输出分析结果，不要寒暄。\n\n日志分析：\n{{log_hints}}\n\n代码分析：\n{{code_hints}}\n\n环境分析：\n{{env_hints}}",
+      "inputs": {
+        "log_hints": "$log_analysis",
+        "code_hints": "$code_analysis",
+        "env_hints": "$env_analysis"
+      },
+      "output_key": "root_cause",
+      "max_tokens": 1200,
+      "temperature": 0.3
+    }
+  ],
+  "edges": [
+    { "from": "describe", "to": "log_analysis" },
+    { "from": "describe", "to": "code_analysis" },
+    { "from": "describe", "to": "env_analysis" },
+    { "from": "log_analysis", "to": "root_cause" },
+    { "from": "code_analysis", "to": "root_cause" },
+    { "from": "env_analysis", "to": "root_cause" }
+  ]
+}

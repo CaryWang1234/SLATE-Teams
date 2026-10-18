@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SLATE Teams · Local AI Agent Workbench — Your Keys, Your Machine</title>
+  <meta name="description" content="SLATE Teams is an open-source AI agent workbench that runs on your own computer. Bring your own model keys (OpenAI, Anthropic, Gemini, any OpenAI-compatible endpoint, or local Ollama), keep data on disk, read a local event ledger of every tool call, and stop a run that really stops.">
+  <link rel="icon" type="image/svg+xml" href="./mark.svg">
+  <link rel="alternate icon" type="image/png" href="./icon.png">
+  <link rel="stylesheet" href="./style.css">
+  <noscript><style>
+    /* 入场动画由脚本点亮：脚本没跑起来时，正文绝不能整片停在 opacity:0。 */
+    .reveal { opacity: 1 !important; transform: none !important; filter: none !important; }
+    .scroll-section { opacity: 1 !important; transform: none !important; }
+  </style></noscript>
+</head>
+<body>
+
+  <!-- ═══ Mobile Drawer ═══ -->
+  <div class="mobile-drawer-overlay" id="mobile-drawer-overlay">
+    <nav class="mobile-drawer" id="mobile-drawer">
+      <div class="drawer-header">
+        <img src="./mark.svg" alt="SLATE Teams" class="drawer-logo">
+        <span class="drawer-title">SLATE Teams</span>
+        <button class="drawer-close" id="drawer-close" aria-label="Close">✕</button>
+      </div>
+      <div class="drawer-links">
+        <a href="#loop"><span class="drawer-icon">00</span> The Loop</a>
+        <a href="#difference"><span class="drawer-icon">01</span> Differences</a>
+        <a href="#room"><span class="drawer-icon">02</span> The Room</a>
+        <a href="#capabilities"><span class="drawer-icon">03</span> Capabilities</a>
+        <a href="#limits"><span class="drawer-icon">04</span> Honest Limits</a>
+        <a href="#start"><span class="drawer-icon">05</span> Quick Start</a>
+        <a href="./guide.html"><span class="drawer-icon">06</span> Guide &amp; Full Tool List</a>
+        <a href="https://docs.slate-ai.site/" target="_blank" rel="noopener"><span class="drawer-icon">07</span> Docs Site</a>
+      </div>
+      <div class="drawer-footer">
+        <a class="drawer-action" href="https://github.com/CaryWang1234/SLATE-Teams/releases/latest" target="_blank" rel="noopener">Download the installer</a>
+        <a class="drawer-action ghost" href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">Read the source</a>
+        <a class="drawer-action ghost" href="https://docs.slate-ai.site/" target="_blank" rel="noopener">Documentation site</a>
+        <a class="drawer-lang" href="./zh/index.html">中文 / English</a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ═══ Mobile Bottom Bar ═══ -->
+  <div class="mobile-bottom-bar" id="mobile-bottom-bar">
+    <a class="bottom-btn" href="https://github.com/CaryWang1234/SLATE-Teams/releases/latest" target="_blank" rel="noopener">
+      <span class="bottom-icon">↓</span>
+      <span class="bottom-label">Download</span>
+    </a>
+    <a class="bottom-btn primary" href="#start">
+      <span class="bottom-icon">→</span>
+      <span class="bottom-label">Get Started</span>
+    </a>
+    <a class="bottom-btn" href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">
+      <span class="bottom-icon">&lt;/&gt;</span>
+      <span class="bottom-label">Source</span>
+    </a>
+  </div>
+
+  <!-- ═══ Scroll Progress Bar ═══ -->
+  <div class="scroll-progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+  <!-- ═══ Navigation ═══ -->
+  <nav class="nav" id="nav">
+    <div class="container nav-inner">
+      <a class="nav-brand" href="#top">
+        <img src="./mark.svg" alt="SLATE Teams">
+        <span>SLATE Teams</span>
+      </a>
+      <div class="nav-links">
+        <a href="#loop">The Loop</a>
+        <a href="#difference">Differences</a>
+        <a href="#room">The Room</a>
+        <a href="#capabilities">Capabilities</a>
+        <a href="#limits">Honest Limits</a>
+        <a href="#start">Quick Start</a>
+        <a href="./guide.html">Guide</a>
+        <a href="https://docs.slate-ai.site/" target="_blank" rel="noopener">Docs</a>
+      </div>
+      <div class="nav-right">
+        <a class="nav-lang" href="./zh/index.html">中文</a>
+        <button class="theme-toggle" id="theme-toggle" title="Toggle theme">☾</button>
+        <a class="nav-github" href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">GitHub ↗</a>
+        <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══ Hero ═══ -->
+  <header class="hero" id="top">
+    <div class="hero-grid" id="hero-grid" aria-hidden="true"></div>
+    <div class="container hero-layout">
+      <div class="hero-copy">
+        <div class="hero-mark">
+          <img class="hero-logo" src="./mark.svg" alt="SLATE Teams Logo">
+          <span>bring-your-own agent</span>
+        </div>
+        <h1 class="hero-title">SLATE Teams</h1>
+        <p class="hero-sub">A local AI agent workbench: your keys, your machine, every step on the record.</p>
+        <p class="hero-en">One prompt. A visible plan. Tools that actually move.</p>
+        <p class="hero-type" id="hero-type"></p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" id="btn-dl" href="https://github.com/CaryWang1234/SLATE-Teams/releases/latest" target="_blank" rel="noopener">Download the installer</a>
+          <a class="btn btn-quiet" href="#loop">See the loop first →</a>
+        </div>
+        <div class="hero-badges">
+          <span class="badge">MIT License</span>
+          <span class="badge">Bring Your Own Key</span>
+          <span class="badge">No Account · No Telemetry</span>
+          <span class="badge">sha256 beside every installer</span>
+        </div>
+        <div class="hero-install">
+          <code id="clone-cmd">git clone https://github.com/CaryWang1234/SLATE-Teams.git</code>
+          <button class="copy-btn" id="copy-clone" type="button" title="Copy">Copy</button>
+        </div>
+        <p class="hero-shipped">Shipping since <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank" rel="noopener">2026-08-01</a>. Every release since has been tagged with its installer and a published sha256 — all of it from one person's desk.</p>
+        <p class="section-note">
+          Hosted agents sell you a stronger model behind their meter. SLATE Teams assumes you already have good models — and owns the part that keeps breaking instead: <strong>a loop you can audit, a stop that really stops, and capabilities you can add without waiting for someone's release</strong>.
+        </p>
+      </div>
+      <div class="hero-console reveal from-right" aria-label="SLATE Teams workspace preview">
+        <div class="console-top">
+          <span></span><span></span><span></span>
+          <strong>SLATE Teams · Agent run</strong>
+        </div>
+        <div class="console-shot">
+          <img src="./assets/en/run.png" alt="SLATE Teams mid-task: the prompt, the model's stated approach, two tool calls marked Executed, and the session token meter along the top" loading="eager" decoding="async">
+          <p class="console-caption">A real run on a real machine. The model is a local stub; the tool executor, the ledger behind those cards and the token meter are the shipping app.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ Fact Ticker：页面上已经有出处的口径，做成一条底噪 ═══ -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track"></div>
+  </div>
+
+  <!-- ═══ The Loop ═══ -->
+  <section class="section loop" id="loop">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">The Loop</div>
+        <h2 class="section-title">Every Agent Product Is Really One Loop</h2>
+        <p class="section-desc">The model is rented; the loop is what you actually run. Here is SLATE Teams's, move by move, with the constant that enforces each one.</p>
+      </div>
+
+      <ol class="loop-steps" data-stagger-group>
+        <li class="loop-step reveal" data-stagger>
+          <span class="loop-n">01</span>
+          <h3>The plan goes on the board before anything runs</h3>
+          <p>A call is not drawn as a step until it reached <code>call.ready</code> — a plan the dedupe guard rejected leaves no card, so the board cannot drift from what really happened.</p>
+        </li>
+        <li class="loop-step reveal" data-stagger>
+          <span class="loop-n">02</span>
+          <h3>Arguments are readable while still being written</h3>
+          <p>Half-streamed tool calls are previewed live but stay unexecutable until the closing marker arrives; <code>truncated &amp; !closed</code> is refused outright. 24 command patterns ask for confirmation first.</p>
+        </li>
+        <li class="loop-step reveal" data-stagger>
+          <span class="loop-n">03</span>
+          <h3>Each call becomes a row you can read afterwards</h3>
+          <p><code>UNIQUE(run_id, seq)</code> with <code>INSERT OR IGNORE</code>, so a retry replays as a no-op instead of double-counting. The client clips arguments and output to 2000 characters, the server keeps a 500-character digest.</p>
+        </li>
+        <li class="loop-step reveal" data-stagger>
+          <span class="loop-n">04</span>
+          <h3>Stop is a state, not a suggestion</h3>
+          <p>Cancelling closes the model stream and the tool stream; the backend reads the closed stream as the cancel signal and kills the child process. 90s idle watchdog, 180s request ceiling, 2 stall rounds warn and 4 exit.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ═══ Evidence Strip ═══ -->
+  <section class="stats" aria-label="Facts you can verify in the source">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="reveal" data-stagger>
+          <div class="stat-num" data-count="0">0</div>
+          <div class="stat-label">Accounts · Subscriptions</div>
+          <div class="stat-hint">You pay the model provider directly, at their price.</div>
+        </div>
+        <div class="reveal" data-stagger>
+          <div class="stat-num" data-count="0">0</div>
+          <div class="stat-label">Telemetry Beacons</div>
+          <div class="stat-hint">Nothing phones home on its own. The one call SLATE Teams makes for itself is the GitHub Releases update check; the CDN assets are listed under Honest Limits.</div>
+        </div>
+        <div class="reveal" data-stagger>
+          <div class="stat-num"><span data-count="4">0</span> ways</div>
+          <div class="stat-label">Model Wire Formats</div>
+          <div class="stat-hint">OpenAI Chat &amp; Responses, Anthropic, Gemini — plus any OpenAI-compatible URL and local models.</div>
+        </div>
+        <div class="reveal" data-stagger>
+          <div class="stat-num" data-count="1">0</div>
+          <div class="stat-label">Ledger Behind Every Panel</div>
+          <div class="stat-hint">Tool cards, whiteboard steps and the session summary are one record, three views.</div>
+        </div>
+        <div class="reveal" data-stagger>
+          <div class="stat-num" data-count="35">0</div>
+          <div class="stat-label">Built-in Tools</div>
+          <div class="stat-hint">Full table lives in the guide — this page is about the differences, not the inventory.</div>
+        </div>
+      </div>
+
+      <div class="spec reveal">
+        <div class="spec-head">
+          <h3>The numbers below are constants in the repository, not adjectives</h3>
+          <p>Open the file, check the value. If a future release changes one, this table should change with it.</p>
+        </div>
+        <dl class="spec-grid">
+          <div class="spec-row">
+            <dt>Parallel subagents per fan-out</dt>
+            <dd><b>5</b><code>frontend/js/services/subagent.js</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>Grinding rounds per goal</dt>
+            <dd><b>10</b><code>frontend/js/services/grind.js</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>High-risk command patterns that ask first</dt>
+            <dd><b>24</b><code>frontend/js/services/riskguard.js</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>Stream idle timeout / request ceiling</dt>
+            <dd><b>90s · 180s</b><code>frontend/js/services/api.js</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>Self-check scripts (dev-only, kept out of this repo)</dt>
+            <dd><b>69</b><code>kept local</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>JavaScript build steps</dt>
+            <dd><b>0</b><code>no package.json, no bundler</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>Pinned lines in requirements.txt</dt>
+            <dd><b>21</b><code>requirements.txt · includes PyInstaller</code></dd>
+          </div>
+          <div class="spec-row">
+            <dt>Source lines, backend and frontend</dt>
+            <dd><b>60,000</b><code>81 .py + 87 .js · measured, not a constant</code></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ The Differences ═══ -->
+  <section class="section" id="difference">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">Differences</div>
+        <h2 class="section-title">Four Things a Hosted Agent Can't Easily Be</h2>
+        <p class="section-desc">Not a feature race — every one of these follows from who owns the runtime. Each one is also checkable in this repository, so treat the claims below as code review, not copy.</p>
+      </div>
+
+      <article class="diff">
+        <div class="diff-head reveal from-left">
+          <span class="diff-index">01</span>
+          <h3>Your keys never pass through us — because there is no us.</h3>
+          <p>SLATE Teams holds no master credential and routes nothing through a vendor cloud. You paste each provider's key once, into a local file; it goes from your machine straight to the endpoint you chose, per request.</p>
+        </div>
+        <div class="diff-body">
+          <div class="contrast reveal from-left">
+            <div class="contrast-col them">
+              <span class="contrast-label">Typical hosted agent</span>
+              <p>Usage is metered in credits the vendor sets. Prompts, code and files are indexed on their infrastructure, and the model list is whatever they enabled this month.</p>
+            </div>
+            <div class="contrast-col ours">
+              <span class="contrast-label">SLATE Teams</span>
+              <p>Bring your own key and your own hardware. Switch provider mid-task, cheap models for drafting and a heavy one for the final call, or run a local model that never leaves the room. Nothing is locked; nobody bills you for switching.</p>
+            </div>
+          </div>
+          <div class="code-box reveal from-right">
+            <div class="code-box-bar"><i></i><i></i><i></i></div>
+            <pre><span class="c-muted"># backend/routers/proxy.py</span>
+<span class="c-text">_stream_openai / _stream_responses</span>
+<span class="c-text">_stream_anthropic / _stream_google</span>
+<span class="c-muted"># the key arrives with each request</span>
+<span class="c-muted"># no server-side vault, no account,</span>
+<span class="c-muted"># no login screen in this codebase</span></pre>
+          </div>
+        </div>
+        <p class="diff-evidence reveal">Evidence: <code>backend/routers/proxy.py</code> <code>backend/routers/settings.py</code> <code>frontend/js/store.js</code></p>
+      </article>
+
+      <article class="diff">
+        <div class="diff-head reveal from-left">
+          <span class="diff-index">02</span>
+          <h3>Every step is a row you can read afterwards.</h3>
+          <p>One loop kernel emits ordered events, and each plan, start, finish and cancel is written to a local ledger. What you see on screen is not a re-rendered console log — it is a projection of stored records.</p>
+        </div>
+        <div class="diff-body">
+          <div class="contrast reveal from-left">
+            <div class="contrast-col them">
+              <span class="contrast-label">Typical hosted agent</span>
+              <p>A spinner, then a final diff. When round fourteen goes the wrong way, the reasoning and the half-finished calls that led there are not retrievable by you.</p>
+            </div>
+            <div class="contrast-col ours">
+              <span class="contrast-label">SLATE Teams</span>
+              <p>Sequence-checked events on disk, so a retry can't double-count a call. Same source feeds the tool cards, the whiteboard step cards and the per-session usage summary — one truth, three views.</p>
+            </div>
+          </div>
+          <div class="code-box reveal from-right">
+            <div class="code-box-bar"><i></i><i></i><i></i></div>
+            <pre><span class="c-muted">-- data/chat_history.db</span>
+<span class="c-text">runs        (run_id, mode, wall_ms, …)</span>
+<span class="c-text">tool_events (run_id, seq, ts, type, tool, …)</span>
+<span class="c-text">  UNIQUE INDEX (run_id, seq)  -- INSERT OR IGNORE</span>
+<span class="c-muted">call.start → call.finish | call.cancel</span>
+<span class="c-muted">client clips a digest to 2000 chars;</span>
+<span class="c-muted">the server stores the first 500</span></pre>
+          </div>
+        </div>
+        <p class="diff-evidence reveal">Evidence: <code>frontend/js/services/agent_loop.js</code> <code>frontend/js/services/agent_ledger.js</code> <code>backend/routers/events.py</code></p>
+      </article>
+
+      <article class="diff">
+        <div class="diff-head reveal from-left">
+          <span class="diff-index">03</span>
+          <h3>Stop means stop — and a stuck loop notices itself.</h3>
+          <p>Cancelling closes both the model stream and the tool stream; for streaming tools the backend reads a closed stream as the cancellation signal and terminates the running child process. Around it, four layers make sure "slow" never becomes "frozen".</p>
+        </div>
+        <div class="diff-body">
+          <div class="contrast reveal from-left">
+            <div class="contrast-col them">
+              <span class="contrast-label">Typical hosted agent</span>
+              <p>"Stop" halts the interface while the job carries on somewhere else — and keeps spending. A loop that spins on the same failing call needs a human to notice.</p>
+            </div>
+            <div class="contrast-col ours">
+              <span class="contrast-label">SLATE Teams</span>
+              <p>90-second stream-idle watchdog, zero-output backoff and retry, 180-second request and tool timeouts, UI watchdog for forced recovery. Identical calls deduplicate: two rounds warn, four rounds exit with a stated reason. Half-written tool arguments are previewed but never executed.</p>
+            </div>
+          </div>
+          <div class="code-box reveal from-right">
+            <div class="code-box-bar"><i></i><i></i><i></i></div>
+            <pre><span class="c-muted">// frontend/js/services/api.js</span>
+<span class="c-text">STREAM_IDLE_TIMEOUT_MS = 90000</span>
+<span class="c-text">STREAM_MAX_RETRIES     = 2</span>
+<span class="c-text">REQUEST_TIMEOUT_MS     = 180000</span>
+<span class="c-muted">// chat.js — stall guard</span>
+<span class="c-text">WARN_ROUNDS = 2 · EXIT_ROUNDS = 4</span>
+<span class="c-muted">// skills.py — closed stream == cancelled</span></pre>
+          </div>
+        </div>
+        <p class="diff-evidence reveal">Evidence: <code>backend/routers/skills.py</code> <code>frontend/js/services/inkstream.js</code> <code>frontend/js/components/chat.js</code></p>
+      </article>
+
+      <article class="diff">
+        <div class="diff-head reveal from-left">
+          <span class="diff-index">04</span>
+          <h3>Adding a capability is a file drop, not a release.</h3>
+          <p>Thirty-five tools ship ready. Beyond them, one <code>SKILL.md</code> directory in your local skills folder is live on next message — @mention it and its context injects itself.</p>
+        </div>
+        <div class="diff-body">
+          <div class="contrast reveal from-left">
+            <div class="contrast-col them">
+              <span class="contrast-label">Typical hosted agent</span>
+              <p>The capability set is whatever the vendor shipped last. Extending it means waiting on a roadmap you don't control, or a plugin API they may deprecate.</p>
+            </div>
+            <div class="contrast-col ours">
+              <span class="contrast-label">SLATE Teams</span>
+              <p>Skill folders drop in and take effect. An MCP client attaches external servers; SLATE Teams also serves MCP itself, so other agents can call it. Existing skill directories from other agent ecosystems import as-is.</p>
+            </div>
+          </div>
+          <div class="code-box reveal from-right">
+            <div class="code-box-bar"><i></i><i></i><i></i></div>
+            <pre><span class="c-muted"># data/skills/my-skill/SKILL.md</span>
+<span class="c-text">---</span>
+<span class="c-text">name: my-skill</span>
+<span class="c-text">description: what it teaches SLATE Teams</span>
+<span class="c-text">---</span>
+<span class="c-muted"># external tools appear as:</span>
+<span class="c-text">mcp__{serverId}__{toolName}</span></pre>
+          </div>
+        </div>
+        <p class="diff-evidence reveal">Evidence: <code>backend/routers/skills.py</code> <code>backend/mcp_client.py</code> <code>backend/routers/mcp.py</code> <code>backend/skills/plugin_adapter.py</code></p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ═══ Capabilities ═══ -->
+  <!-- ═══ The Room ═══ -->
+  <section class="section" id="room">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">The Room</div>
+        <h2 class="section-title">A Debate Room With Real Seats</h2>
+        <p class="section-desc">Several models arguing is the easy half. The part that makes this a meeting is that a person can hold a seat at the same table — with a turn, an inbox, and a signature.</p>
+      </div>
+      <div class="scenes-grid" data-stagger-group>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">seat</div>
+          <h3>A Human Seat Is A Real Seat</h3>
+          <p>Add people next to the models. Each one gets a turn, and what they say is recorded under their own name. If they don't show up you decide what happens: wait, wait a fixed number of seconds, skip them <em>on the record</em>, or have an AI ghost-write the line — which is then labelled as ghost-written, never passed off as theirs.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">invite</div>
+          <h3>An Invite That Opens One Room</h3>
+          <p>Participants join from an invite link on their own machine and land on the meeting-hall page — not a slimmed-down copy of your workbench. The ticket is default-deny: a short allow-list of endpoints, and the token itself is stored only as a sha256 digest. Your model keys and your other sessions stay out of scope.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">ledger</div>
+          <h3>Their Words Arrive Through An Inbox</h3>
+          <p>Attendees never write to the transcript directly. A statement lands in an inbox and the host page collects it in its own order, so there is exactly one writer per session and <code>UNIQUE(session_id, seq)</code> keeps a retry from being logged twice.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">sign-off</div>
+          <h3>Decisions Are Signed, Not Implied</h3>
+          <p>A round stops at the sign-off point: decided, awaiting sign-off, not signed off. Nobody nods on your behalf — the signature is made on the host's machine, and presence (online / away / not joined / back) is part of the record, so the transcript says who was actually there.</p>
+        </div>
+      </div>
+      <p class="diff-evidence reveal">Evidence: <code>backend/routers/teams.py</code> <code>frontend/teams.html</code> <code>frontend/js/teams/meeting.js</code> <code>frontend/js/components/team.js</code></p>
+    </div>
+  </section>
+
+  <section class="section" id="capabilities">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">Capabilities</div>
+        <h2 class="section-title">What Those Four Differences Buy You</h2>
+        <p class="section-desc">The inventory is long and deliberately not here. These five are what a local, auditable, bring-your-own-key runtime makes possible in practice.</p>
+      </div>
+      <div class="scenes-grid" data-stagger-group>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">output</div>
+          <h3>Deliverables, Not Just Text</h3>
+          <p>Runs end in files you can send: <code>.pptx</code>, <code>.docx</code>, <code>.xlsx</code>, extracted PDF text and tables, SVG charts, QR codes, portable single-file web bundles. Editing preserves UTF-8 / BOM / GB18030 and handles Chinese and emoji without corrupting them.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">memory</div>
+          <h3>Memory That Stays on Your Disk</h3>
+          <p>Chat history in local SQLite, a local vector knowledge base, an Obsidian-style vault with <code>[[wiki-link]]</code> backlinks, and long-term memory that auto-distills across sessions. None of it is uploaded to be "improved".</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">remote</div>
+          <h3>Reach Beyond the Desk</h3>
+          <p>Turn on LAN access and your phone gets a dedicated mobile UI — same chat, same tool loop, bottom-sheet confirmation for high-risk commands. Browser and desktop automation, plus scheduled and event-driven tasks (file change, git push, webhook).</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">council</div>
+          <h3>More Than One Brain</h3>
+          <p>Several models debate: propose, support, oppose, decide, with light models doing the talking and a heavy one making the call. A DAG pipeline runs requirements → decompose → code → review → summarize, and parallel subagents fan out when a task splits.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <div class="scene-icon">source</div>
+          <h3>Read the Source, Skip the Build</h3>
+          <p>Vanilla ES modules, no npm, no bundler — edit a file, refresh, it works. The whole frontend is the product, and every claim on this page has a path you can open.</p>
+        </div>
+      </div>
+      <p class="section-note reveal">Want the full list? <a href="./guide.html#ch17">Chapter 17 of the guide</a> carries every capability with a one-line description, all 35 tools, the use cases and the tech stack; the rest of the guide covers each panel, the 8 workflow templates and the settings walkthrough — in Chinese and English.</p>
+    </div>
+  </section>
+
+  <!-- ═══ Honest Limits ═══ -->
+  <section class="section" id="limits">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">Honest Limits</div>
+        <h2 class="section-title">The Same Ownership Costs You Something</h2>
+        <p class="section-desc">A comparison page that lists only wins is a brochure. Local, single-user, bring-your-own-key is a trade — here is what SLATE Teams gives up to have it.</p>
+      </div>
+      <div class="scenes-grid limits" data-stagger-group>
+        <div class="scene-card reveal" data-stagger>
+          <h3>No Hosted Workspace</h3>
+          <p>No organisations, no shared review, no server API. It is one person's desktop, and team features would change what it is.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>Guardrails, Not a Jail</h3>
+          <p>The terminal tool runs a real shell. Twenty-four categories of high-risk commands ask for confirmation first and catastrophic ones are blocked outright — but a denylist is a rail, not a sandbox.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>Keys in a Local File</h3>
+          <p>Model keys sit in plaintext JSON inside your data directory, not in the OS keychain. Anything that can read that folder can read them.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>Not Offline</h3>
+          <p>Four CDN assets load on start: highlight.js and its stylesheet, Mermaid, anime.js. Air-gapped use means mirroring them yourself first.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>Windows &amp; macOS First</h3>
+          <p>Installers ship for Windows (WebView2 required) and disk images for macOS. Linux runs from source, with no packaged build.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>LAN Is the Whole App</h3>
+          <p>If you turn on remote control, that network can drive everything — terminal included — behind one token and an optional password. Off unless you enable it.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>Long Work Dies With Its Process</h3>
+          <p>A background terminal task lives inside the SLATE Teams backend; a background subagent batch lives inside the browser page. Reload or quit and that work stops — the log under <code>data/bg_tasks/</code> is the only trace, and nothing resumes after a restart.</p>
+        </div>
+        <div class="scene-card reveal" data-stagger>
+          <h3>Parallelism Is Cross-Project</h3>
+          <p>Two different projects can generate at once, and a send that finds no slot is queued rather than dropped. Two runs inside the <em>same</em> project still serialize — worktree isolation with a merge review is designed, not shipped.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Quick Start ═══ -->
+  <section class="section" id="start">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-tag">Quick Start</div>
+        <h2 class="section-title">Three Steps, Then Judge for Yourself</h2>
+        <p class="section-desc">Step one is all a non-coder needs. Steps two and three are for anyone who intends to read the loop before trusting it.</p>
+      </div>
+
+      <div class="start-steps" data-stagger-group>
+        <div class="step reveal" data-stagger>
+          <div class="step-num">01</div>
+          <h4>Install or Clone</h4>
+          <p>A per-user Windows installer from Releases — no administrator rights, clean uninstall. Or read the source:</p>
+          <code>git clone https://github.com/CaryWang1234/SLATE-Teams.git</code>
+        </div>
+        <div class="step reveal" data-stagger>
+          <div class="step-num">02</div>
+          <h4>Launch</h4>
+          <p>From source you need Python 3.13+. Two commands start the local service:</p>
+          <code>pip install -r requirements.txt<br>start.bat &nbsp;# or ./start.sh</code>
+        </div>
+        <div class="step reveal" data-stagger>
+          <div class="step-num">03</div>
+          <h4>Paste One Key</h4>
+          <p>Add the key for any model you already have — or point it at a local Ollama / LM Studio endpoint and add none. Then open:</p>
+          <code>http://127.0.0.1:8000</code>
+        </div>
+      </div>
+      <p class="section-note reveal">Nothing to sign up for, nothing to migrate. Your history, memory, skills and usage data are files on your own disk from the first run.</p>
+    </div>
+  </section>
+
+  <!-- ═══ CTA ═══ -->
+  <section class="cta">
+    <div class="container reveal">
+      <h2>Run it against the agent you already pay for.</h2>
+      <p>Install SLATE Teams, point it at a key you already hold, and give both the same task. The loop, the ledger and the limits are all in the open — MIT licensed, and yours to audit.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/CaryWang1234/SLATE-Teams/releases/latest" target="_blank" rel="noopener">Download the installer</a>
+        <a class="btn btn-ghost" href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">Read the source</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Footer ═══ -->
+  <footer class="footer">
+    <div class="container">
+      <p class="ink-line">SLATE Teams — Grind inspiration into polished deliverables.</p>
+      <p>
+        <a href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank" rel="noopener">GitHub</a> ·
+        <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank" rel="noopener">Releases</a> ·
+        <a href="https://github.com/CaryWang1234/SLATE-Teams/issues" target="_blank" rel="noopener">Issues</a> ·
+        <a href="./guide.html">Guide</a> ·
+        <a href="https://docs.slate-ai.site/" target="_blank" rel="noopener">Documentation</a>
+      </p>
+      <p style="margin-top: 8px;">SLATE Teams ships no model of its own and is unaffiliated with any provider. · MIT License · © 2026 Cary</p>
+    </div>
+  </footer>
+
+  <script>
+    const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ── Dual theme toggle ──
+    const themeBtn = document.getElementById("theme-toggle");
+    const applyTheme = (t) => {
+      document.body.dataset.theme = t;
+      themeBtn.textContent = t === "light" ? "☀" : "☾";
+      try { localStorage.setItem("slate-site-theme", t); } catch {}
+    };
+    let saved = "dark";
+    try { saved = localStorage.getItem("slate-site-theme") || "dark"; } catch {}
+    applyTheme(saved);
+    themeBtn.addEventListener("click", () => {
+      applyTheme(document.body.dataset.theme === "light" ? "dark" : "light");
+    });
+
+    // ── Mobile drawer navigation ──
+    const hamburger = document.getElementById("nav-hamburger");
+    const drawerOverlay = document.getElementById("mobile-drawer-overlay");
+    const drawer = document.getElementById("mobile-drawer");
+    const drawerClose = document.getElementById("drawer-close");
+
+    function openDrawer() {
+      drawerOverlay.classList.add("open");
+      hamburger.classList.add("active");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeDrawer() {
+      drawerOverlay.classList.remove("open");
+      hamburger.classList.remove("active");
+      document.body.style.overflow = "";
+    }
+
+    hamburger?.addEventListener("click", () => {
+      drawerOverlay.classList.contains("open") ? closeDrawer() : openDrawer();
+    });
+
+    drawerClose?.addEventListener("click", closeDrawer);
+
+    // 点击遮罩关闭
+    drawerOverlay?.addEventListener("click", (e) => {
+      if (e.target === drawerOverlay) closeDrawer();
+    });
+
+    // 点击抽屉内链接后关闭
+    drawer?.querySelectorAll("a[href^='#']").forEach((link) => {
+      link.addEventListener("click", () => {
+        closeDrawer();
+      });
+    });
+
+    // ESC 键关闭
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && drawerOverlay?.classList.contains("open")) closeDrawer();
+    });
+
+    // ── Stagger entrance: group items get递增 delay by index ──
+    document.querySelectorAll("[data-stagger-group]").forEach((group) => {
+      const items = group.querySelectorAll("[data-stagger], .reveal");
+      items.forEach((el, i) => {
+        el.style.setProperty("--rd", (i * 0.07).toFixed(2) + "s");
+      });
+    });
+
+    // ── Scroll reveal (IntersectionObserver) ──
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in");
+          observer.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+
+    // ── 被"跳过"的区块兜底 ──
+    // IO 只在相交状态变化的那一帧派发：一次大滚动 / 拖滚动条 / 按 End / 带滚动位置刷新，
+    // 会让区块从视口下方直接变成视口上方，回调一次都不来 —— .reveal 于是永久停在
+    // opacity:0（整段看不见），[data-count] 永久写着 0（把真数说成 0，更糟）。
+    // 兜底口径：谁的盒子已经越过视口上沿，就按它"本来就该看得见"处理。
+    const countEl = (el) => {
+      if (el.dataset.counted) return;
+      el.dataset.counted = "1";
+      animateCount(el);
+    };
+    let rescuing = false;
+    const rescueSkipped = () => {
+      rescuing = false;
+      document.querySelectorAll(".reveal:not(.in), [data-count]").forEach((el) => {
+        if (el.getBoundingClientRect().bottom >= 0) return;
+        if (el.classList.contains("reveal")) {
+          el.classList.add("in");
+          observer.unobserve(el);
+        }
+        if (el.hasAttribute("data-count")) {
+          countObserver.unobserve(el);
+          countEl(el);
+        }
+      });
+    };
+    window.addEventListener("scroll", () => {
+      if (!rescuing) { rescuing = true; requestAnimationFrame(rescueSkipped); }
+    }, { passive: true });
+    window.addEventListener("resize", () => requestAnimationFrame(rescueSkipped));
+    window.addEventListener("load", () => requestAnimationFrame(rescueSkipped));
+
+    // ── Number count-up ──
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+    function animateCount(el) {
+      const target = parseInt(el.dataset.count, 10) || 0;
+      if (REDUCED || target === 0) { el.textContent = target; return; }
+      const dur = 1400, t0 = performance.now();
+      const tick = (now) => {
+        const p = Math.min((now - t0) / dur, 1);
+        el.textContent = Math.round(easeOutCubic(p) * target);
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+    const countObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          animateCount(entry.target);
+          countObserver.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.4 });
+    document.querySelectorAll("[data-count]").forEach((el) => countObserver.observe(el));
+    // 带滚动位置刷新时，视口上方那批 IO 一次都不会派发 → 起手就按盒子位置补一次
+    // （放在这里而不是上面：countObserver 得先存在）
+    requestAnimationFrame(rescueSkipped);
+
+    // ── Hero typewriter ──
+    const typeEl = document.getElementById("hero-type");
+    const phrases = [
+      "Your keys. Your machine. Nobody's credits.",
+      "Every tool call is a row in a local ledger.",
+      "Stop closes the stream — and kills the process.",
+      "A new capability is a file, not a release.",
+    ];
+    if (REDUCED) {
+      typeEl.textContent = phrases[0];
+    } else {
+      let pi = 0, ci = 0, deleting = false;
+      const step = () => {
+        const phrase = phrases[pi];
+        if (!deleting) {
+          ci++;
+          typeEl.textContent = phrase.slice(0, ci);
+          if (ci === phrase.length) { deleting = true; setTimeout(step, 2200); return; }
+          setTimeout(step, 85);
+        } else {
+          ci--;
+          typeEl.textContent = phrase.slice(0, ci);
+          if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; setTimeout(step, 400); return; }
+          setTimeout(step, 30);
+        }
+      };
+      setTimeout(step, 600);
+    }
+
+    // ── Copy the clone command ──
+    const cloneCmd = document.getElementById("clone-cmd");
+    const copyBtn = document.getElementById("copy-clone");
+    if (cloneCmd && copyBtn) {
+      const flash = (label) => {
+        copyBtn.textContent = label;
+        copyBtn.classList.add("done");
+        setTimeout(() => { copyBtn.textContent = "Copy"; copyBtn.classList.remove("done"); }, 1800);
+      };
+      const legacy = () => {
+        const range = document.createRange();
+        range.selectNodeContents(cloneCmd);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        sel.removeAllRanges();
+        if (ok) flash("Copied");
+      };
+      copyBtn.addEventListener("click", () => {
+        const text = cloneCmd.textContent.trim();
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(() => flash("Copied"), legacy);
+        } else {
+          legacy();
+        }
+      });
+    }
+
+    // ── Name the installer this visitor can actually run ──
+    const dlBtn = document.getElementById("btn-dl");
+    if (dlBtn) {
+      const raw = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+      const os = /win/i.test(raw) ? "Windows" : /mac|iphone|ipad/i.test(raw) ? "macOS" : "";
+      if (os) dlBtn.textContent = "Download for " + os;
+    }
+
+    // ── Hero grid parallax + scroll progress + nav shadow (merged into one rAF loop) ──
+    const heroGrid = document.getElementById("hero-grid");
+    const progressBar = document.getElementById("progress-bar");
+    const nav = document.getElementById("nav");
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        if (!REDUCED && heroGrid) heroGrid.style.transform = `translateY(${y * 0.35}px)`;
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        if (progressBar) progressBar.style.width = (max > 0 ? (y / max) * 100 : 0) + "%";
+        if (nav) nav.classList.toggle("scrolled", y > 12);
+        ticking = false;
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js" defer></script>
+  <script src="./motion.js" defer></script>
+
+</body>
+</html>

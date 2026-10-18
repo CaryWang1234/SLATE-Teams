@@ -1,0 +1,71 @@
+{
+  "id": "doc-generation-flow",
+  "name": "文档生成流程",
+  "description": "从主题出发，依次生成大纲、正文、摘要，最终输出完整文档。适合技术文档、需求说明、方案书等。",
+  "nodes": [
+    {
+      "id": "outline",
+      "name": "大纲规划",
+      "role": "creative",
+      "model": "",
+      "skill": "",
+      "prompt": "你是文档架构师。请根据以下主题，规划一份清晰的文档大纲（章节标题 + 每章要点），确保逻辑连贯、覆盖完整。只输出大纲，不要寒暄。\n\n主题：\n{{task}}",
+      "inputs": {
+        "task": "$input"
+      },
+      "output_key": "outline",
+      "max_tokens": 800,
+      "temperature": 0.5
+    },
+    {
+      "id": "writing",
+      "name": "正文撰写",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是技术文档撰写专家。请按照以下大纲，撰写完整的文档正文。要求：语言精炼、结构清晰、技术准确、包含必要的代码示例或配置说明。只输出正文，不要寒暄。\n\n主题：\n{{task}}\n\n大纲：\n{{outline}}",
+      "inputs": {
+        "task": "$input",
+        "outline": "$outline"
+      },
+      "output_key": "content",
+      "max_tokens": 3000,
+      "temperature": 0.4
+    },
+    {
+      "id": "summary",
+      "name": "摘要提炼",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是文档摘要专家。请为以下文档生成：1) 一句话概述（50字内）2) 关键要点（3-5条）3) 目标读者。只输出摘要，不要寒暄。\n\n文档正文：\n{{content}}",
+      "inputs": {
+        "content": "$writing"
+      },
+      "output_key": "summary",
+      "max_tokens": 600,
+      "temperature": 0.3
+    },
+    {
+      "id": "deliver",
+      "name": "交付整合",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是文档交付整合人。请将摘要、大纲和正文整合为一份完整的交付文档，格式为 Markdown，开头放摘要，然后是目录，最后是正文。只输出最终文档，不要寒暄。\n\n摘要：\n{{summary}}\n\n大纲：\n{{outline}}\n\n正文：\n{{content}}",
+      "inputs": {
+        "summary": "$summary",
+        "outline": "$outline",
+        "content": "$writing"
+      },
+      "output_key": "final_doc",
+      "max_tokens": 4000,
+      "temperature": 0.3
+    }
+  ],
+  "edges": [
+    { "from": "outline", "to": "writing" },
+    { "from": "writing", "to": "summary" },
+    { "from": "summary", "to": "deliver" }
+  ]
+}

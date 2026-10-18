@@ -1,0 +1,64 @@
+name: Build macOS Installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (如 0.4.5)'
+        required: true
+        default: '0.4.5'
+
+jobs:
+  build-macos:
+    name: Build macOS DMG
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install Homebrew dependencies
+        run: |
+          brew install create-dmg --quiet || true
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build macOS installer
+        run: |
+          chmod +x build_macos.sh
+          ./build_macos.sh ${{ steps.version.outputs.version }}
+
+      - name: Verify outputs
+        run: |
+          ls -lh dist/*.dmg
+          cat dist/*.sha256
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SLATE-Teams-macOS-${{ steps.version.outputs.version }}
+          path: dist/SLATE-Teams-Setup-*.dmg
+          retention-days: 90
+
+      - name: Upload checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: SLATE-Teams-macOS-${{ steps.version.outputs.version }}-checksum
+          path: dist/SLATE-Teams-Setup-*.dmg.sha256
+          retention-days: 90
+

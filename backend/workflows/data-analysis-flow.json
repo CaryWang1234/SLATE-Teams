@@ -1,0 +1,87 @@
+{
+  "id": "data-analysis-flow",
+  "name": "数据分析流程",
+  "description": "从数据描述出发，并行进行趋势分析、异常检测和统计摘要，最后生成可视化建议与决策建议。",
+  "nodes": [
+    {
+      "id": "understand",
+      "name": "数据理解",
+      "role": "analyst",
+      "model": "",
+      "skill": "",
+      "prompt": "你是数据分析师。请根据以下数据描述或样本，分析数据结构、字段含义、数据规模和质量问题，给出数据概览。只输出分析结果，不要寒暄。\n\n数据描述：\n{{task}}",
+      "inputs": {
+        "task": "$input"
+      },
+      "output_key": "data_overview",
+      "max_tokens": 800,
+      "temperature": 0.3
+    },
+    {
+      "id": "trend",
+      "name": "趋势分析",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是数据趋势分析专家。基于以下数据概览，识别关键趋势、周期性模式和增长/下降方向，给出量化描述。只输出分析结果，不要寒暄。\n\n数据概览：\n{{data_overview}}",
+      "inputs": {
+        "data_overview": "$understand"
+      },
+      "output_key": "trend",
+      "max_tokens": 900,
+      "temperature": 0.4
+    },
+    {
+      "id": "anomaly",
+      "name": "异常检测",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是数据异常检测专家。基于以下数据概览，识别可能的异常值、离群点和不符合预期的数据模式，分析可能原因。只输出分析结果，不要寒暄。\n\n数据概览：\n{{data_overview}}",
+      "inputs": {
+        "data_overview": "$understand"
+      },
+      "output_key": "anomaly",
+      "max_tokens": 900,
+      "temperature": 0.4
+    },
+    {
+      "id": "stats",
+      "name": "统计摘要",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是数据统计专家。基于以下数据概览，给出关键统计指标（均值、中位数、分布特征、相关性等），用数字说话。只输出统计结果，不要寒暄。\n\n数据概览：\n{{data_overview}}",
+      "inputs": {
+        "data_overview": "$understand"
+      },
+      "output_key": "stats",
+      "max_tokens": 900,
+      "temperature": 0.3
+    },
+    {
+      "id": "recommend",
+      "name": "决策建议",
+      "role": "decider",
+      "model": "",
+      "skill": "",
+      "prompt": "你是数据分析决策顾问。请综合趋势分析、异常检测和统计摘要，给出：1) 核心发现（3-5条）2) 可视化建议（推荐图表类型和展示方式）3) 行动建议。只输出建议本身，不要寒暄。\n\n趋势分析：\n{{trend}}\n\n异常检测：\n{{anomaly}}\n\n统计摘要：\n{{stats}}",
+      "inputs": {
+        "trend": "$trend",
+        "anomaly": "$anomaly",
+        "stats": "$stats"
+      },
+      "output_key": "recommendation",
+      "max_tokens": 1200,
+      "temperature": 0.4
+    }
+  ],
+  "edges": [
+    { "from": "understand", "to": "trend" },
+    { "from": "understand", "to": "anomaly" },
+    { "from": "understand", "to": "stats" },
+    { "from": "trend", "to": "recommend" },
+    { "from": "anomaly", "to": "recommend" },
+    { "from": "stats", "to": "recommend" }
+  ]
+}

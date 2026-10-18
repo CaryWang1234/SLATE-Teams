@@ -1,0 +1,89 @@
+{
+  "id": "research-report-flow",
+  "name": "研究报告流程",
+  "description": "从研究课题出发，并行进行背景调研、方案对比、可行性分析，最终生成结构化研究报告。",
+  "nodes": [
+    {
+      "id": "define",
+      "name": "课题定义",
+      "role": "analyst",
+      "model": "",
+      "skill": "",
+      "prompt": "你是研究方法论专家。请将以下研究课题拆解为：1) 研究目标 2) 关键问题（3-5个）3) 研究范围与边界 4) 方法论建议。只输出分析结果，不要寒暄。\n\n研究课题：\n{{task}}",
+      "inputs": {
+        "task": "$input"
+      },
+      "output_key": "research_scope",
+      "max_tokens": 800,
+      "temperature": 0.4
+    },
+    {
+      "id": "background",
+      "name": "背景调研",
+      "role": "",
+      "model": "",
+      "skill": "web_search",
+      "prompt": "",
+      "inputs": {
+        "query": "$research_scope"
+      },
+      "output_key": "background",
+      "max_tokens": 0,
+      "temperature": 0
+    },
+    {
+      "id": "compare",
+      "name": "方案对比",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是技术选型专家。基于以下研究范围和背景信息，列出主要可选方案，从技术成熟度、社区生态、学习曲线、性能、成本五个维度进行对比，给出对比表格。只输出对比结果，不要寒暄。\n\n研究范围：\n{{research_scope}}\n\n背景信息：\n{{background}}",
+      "inputs": {
+        "research_scope": "$define",
+        "background": "$background"
+      },
+      "output_key": "comparison",
+      "max_tokens": 1500,
+      "temperature": 0.4
+    },
+    {
+      "id": "feasibility",
+      "name": "可行性分析",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是可行性分析专家。基于以下研究范围和背景信息，评估实施该研究的技术可行性、资源需求、时间周期和主要风险。只输出分析结果，不要寒暄。\n\n研究范围：\n{{research_scope}}\n\n背景信息：\n{{background}}",
+      "inputs": {
+        "research_scope": "$define",
+        "background": "$background"
+      },
+      "output_key": "feasibility",
+      "max_tokens": 1000,
+      "temperature": 0.4
+    },
+    {
+      "id": "report",
+      "name": "报告生成",
+      "role": "decider",
+      "model": "",
+      "skill": "",
+      "prompt": "你是研究报告撰写人。请综合方案对比和可行性分析，生成一份结构化研究报告：摘要、背景、方案对比表、可行性评估、推荐方案与理由、下一步行动计划。只输出报告本身，不要寒暄。\n\n方案对比：\n{{comparison}}\n\n可行性分析：\n{{feasibility}}",
+      "inputs": {
+        "comparison": "$compare",
+        "feasibility": "$feasibility"
+      },
+      "output_key": "report",
+      "max_tokens": 2000,
+      "temperature": 0.3
+    }
+  ],
+  "edges": [
+    { "from": "define", "to": "background" },
+    { "from": "define", "to": "compare" },
+    { "from": "define", "to": "feasibility" },
+    { "from": "background", "to": "compare" },
+    { "from": "background", "to": "feasibility" },
+    { "from": "compare", "to": "report" },
+    { "from": "feasibility", "to": "report" }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "id": "default-dev-flow",
+  "name": "标准开发流程",
+  "description": "需求分析 → 任务拆解 → 编码实现 → 代码审查 → 总结交付，五节点线性 DAG 示例。",
+  "nodes": [
+    {
+      "id": "requirement",
+      "name": "需求分析",
+      "role": "analyst",
+      "model": "",
+      "skill": "",
+      "prompt": "你是需求分析师。请根据下面的任务描述输出清晰的需求分析，包含：目标、范围、关键约束、验收标准。只输出分析内容本身，不要寒暄。\n\n任务描述：\n{{task}}",
+      "inputs": {
+        "task": "$input"
+      },
+      "output_key": "requirement",
+      "max_tokens": 800,
+      "temperature": 0.4
+    },
+    {
+      "id": "plan",
+      "name": "任务拆解",
+      "role": "creative",
+      "model": "",
+      "skill": "",
+      "prompt": "你是任务规划师。基于需求分析，把任务拆解为有序、可独立验收的子任务清单（编号列出，每项注明输入、产出与验收方式）。只输出拆解结果本身，不要寒暄。\n\n原始任务：\n{{task}}\n\n需求分析：\n{{requirement}}",
+      "inputs": {
+        "task": "$input",
+        "requirement": "$requirement"
+      },
+      "output_key": "plan",
+      "max_tokens": 900,
+      "temperature": 0.5
+    },
+    {
+      "id": "coding",
+      "name": "编码实现",
+      "role": "",
+      "model": "gpt-5.6-terra",
+      "skill": "",
+      "prompt": "你是资深工程师。请按照拆解方案完成编码实现：给出关键代码（可直接落地的完整片段）与必要的实现说明。若任务不涉及代码，则给出等价的详细执行方案。只输出实现内容与必要说明，不要寒暄。\n\n原始任务：\n{{task}}\n\n需求分析：\n{{requirement}}\n\n拆解方案：\n{{plan}}",
+      "inputs": {
+        "task": "$input",
+        "requirement": "$requirement",
+        "plan": "$plan"
+      },
+      "output_key": "code",
+      "max_tokens": 2000,
+      "temperature": 0.3
+    },
+    {
+      "id": "review",
+      "name": "代码审查",
+      "role": "decider",
+      "model": "",
+      "skill": "",
+      "prompt": "你是严格的代码审查者。请审查下面的实现，指出问题（正确性、边界、安全、可维护性）并给出具体改进建议；若无明显问题请明确说明通过。只输出审查意见本身，不要寒暄。\n\n原始任务：\n{{task}}\n\n拆解方案：\n{{plan}}\n\n待审查实现：\n{{code}}",
+      "inputs": {
+        "task": "$input",
+        "plan": "$plan",
+        "code": "$coding"
+      },
+      "output_key": "review",
+      "max_tokens": 900,
+      "temperature": 0.3
+    },
+    {
+      "id": "summary",
+      "name": "总结交付",
+      "role": "",
+      "model": "",
+      "skill": "",
+      "prompt": "你是交付总结人。请汇总本次工作流的全部产出，生成一份交付报告：做了什么、怎么做的、审查结论、遗留风险与后续建议。只输出报告本身，不要寒暄。\n\n原始任务：\n{{task}}\n\n需求分析：\n{{requirement}}\n\n拆解方案：\n{{plan}}\n\n实现内容：\n{{code}}\n\n审查意见：\n{{review}}",
+      "inputs": {
+        "task": "$input",
+        "requirement": "$requirement",
+        "plan": "$plan",
+        "code": "$coding",
+        "review": "$review"
+      },
+      "output_key": "summary",
+      "max_tokens": 1200,
+      "temperature": 0.4
+    }
+  ],
+  "edges": [
+    { "from": "requirement", "to": "plan" },
+    { "from": "plan", "to": "coding" },
+    { "from": "coding", "to": "review" },
+    { "from": "review", "to": "summary" }
+  ]
+}

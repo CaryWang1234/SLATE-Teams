@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0A0A">
+  <title>SLATE Teams 遥控</title>
+  <link rel="icon" type="image/png" href="./icon.png">
+  <link rel="stylesheet" href="./css/style.css?v=20261017-001">
+  <link rel="stylesheet" href="./css/mobile.css?v=20261017-001">
+  <script>
+    // i18n：翻译完成前遮蔽页面，兜底超时强显避免白屏
+    document.documentElement.classList.add("i18n-pending");
+    setTimeout(function () { document.documentElement.classList.remove("i18n-pending"); }, 2500);
+  </script>
+</head>
+<body>
+
+  <!-- ══ 顶部状态条 ══ -->
+  <header id="m-topbar">
+    <div id="m-topbar-title" class="m-topbar-title">SLATE Teams</div>
+    <div id="m-topbar-right" class="m-topbar-right"></div>
+  </header>
+
+  <!-- ══ 视图容器 ══ -->
+  <main id="m-views">
+
+    <section id="view-chat" class="m-view active">
+      <div id="m-chat-scroll" class="m-chat-scroll">
+        <div id="m-chat-emptystate" class="m-empty">
+          <img src="./icon.png?v=20261017-001" alt="SLATE Teams" class="m-empty-logo" style="width:48px;height:48px;object-fit:contain;">
+          <p id="m-chat-empty-text">本地 AI 协作工作台</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-conversations" class="m-view">
+      <div class="m-list-head">
+        <span id="m-conv-title">会话</span>
+        <button id="m-btn-new-conv" class="m-btn-sm">＋ 新对话</button>
+      </div>
+      <div id="m-conv-list" class="m-list"></div>
+    </section>
+
+    <section id="view-memory" class="m-view">
+      <div class="m-list-head">
+        <span id="m-memory-title">长期记忆</span>
+        <button id="m-btn-add-memory" class="m-btn-sm">＋ 新建</button>
+      </div>
+      <div id="m-memory-list" class="m-list"></div>
+    </section>
+
+    <section id="view-schedule" class="m-view">
+      <div class="m-list-head">
+        <span id="m-schedule-title">待办 / 定时</span>
+        <button id="m-btn-add-task" class="m-btn-sm">＋ 新建</button>
+      </div>
+      <div id="m-schedule-list" class="m-list"></div>
+    </section>
+
+    <section id="view-settings" class="m-view">
+      <div id="m-settings-body" class="m-settings-body">
+        <div id="m-settings-model"></div>
+        <div id="m-settings-key"></div>
+        <div id="m-settings-theme"></div>
+        <div id="m-settings-lan"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══ 聊天输入条（悬浮于对话视图底部） ══ -->
+  <div id="m-chat-input-bar" class="m-chat-input-bar hidden">
+    <div id="m-mention-overlay" class="m-mention-overlay hidden"></div>
+    <div class="m-chat-input-row">
+      <textarea id="m-chat-input" rows="1" placeholder="输入消息…" enterkeyhint="send"></textarea>
+      <button id="m-btn-send" class="m-send-btn" aria-label="发送">↑</button>
+    </div>
+  </div>
+
+  <!-- ══ 底部导航 ══ -->
+  <nav id="m-tabbar">
+    <button class="m-tab active" data-tab="chat">对话</button>
+    <button class="m-tab" data-tab="conversations">会话</button>
+    <button class="m-tab" data-tab="memory">记忆</button>
+    <button class="m-tab" data-tab="schedule">待办</button>
+    <button class="m-tab" data-tab="settings">设置</button>
+  </nav>
+
+  <!-- ══ 覆盖层宿主 ══ -->
+  <div id="m-sheet-root"></div>
+  <div id="m-toast-root"></div>
+
+  <script type="module" src="./js/mobile/m-init.js?v=20261017-001"></script>
+</body>
+</html>

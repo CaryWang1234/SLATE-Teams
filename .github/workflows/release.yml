@@ -1,0 +1,180 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号（可带预发布后缀，如 0.4.5-rc1 / 0.4.5-beta2）'
+        required: true
+        default: '0.4.5'
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Windows 构建 ──────────────────────────────────────────────
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build desktop package (PyInstaller)
+        run: python -m PyInstaller --noconfirm --clean SLATE_Teams.spec
+
+      - name: Prepare data directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist\SLATE-Teams\data\skills | Out-Null
+          if (Test-Path data\constitution.json) { Copy-Item data\constitution.json dist\SLATE-Teams\data\ -Force }
+          if (Test-Path data\skills\.gitkeep) { Copy-Item data\skills\.gitkeep dist\SLATE-Teams\data\skills\ -Force }
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Get version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $ver = "${{ github.event.inputs.version }}"
+          } elseif ("${{ github.ref }}" -match "^refs/tags/v(.+)") {
+            $ver = $Matches[1]
+          } else {
+            $iss = Get-Content SLATE_Teams.iss | Select-String '#define MyAppVersion'
+            $ver = $iss -replace '.*"(.+)".*', '$1'
+          }
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Build installer (ISCC)
+        shell: pwsh
+        run: |
+          $iscc = Get-ChildItem "C:\Program Files*\Inno Setup*\ISCC.exe" | Select-Object -First 1
+          if (-not $iscc) { Write-Error "ISCC.exe not found"; exit 1 }
+          $ver = "${{ steps.version.outputs.version }}"
+          $build = (Get-Date).ToUniversalTime().ToString("yyyyMMddHHmm")
+          & $iscc.FullName "/DMyAppVersion=$ver" "/DMyAppBuild=$build" "SLATE_Teams.iss"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Generate SHA256 checksum
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem installer/*.exe | Select-Object -First 1
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash
+          "$hash  $($exe.Name)" | Out-File -FilePath "$($exe.FullName).sha256" -Encoding utf8
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SLATE-Teams-Windows-${{ steps.version.outputs.version }}
+          path: |
+            installer/*.exe
+            installer/*.exe.sha256
+          if-no-files-found: error
+
+  # ── macOS 构建 ────────────────────────────────────────────────
+  build-macos:
+    name: Build macOS DMG
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install Homebrew dependencies
+        run: |
+          brew install create-dmg --quiet || true
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(grep '#define MyAppVersion' SLATE_Teams.iss | sed 's/.*"\(.*\)".*/\1/')
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build macOS installer
+        run: |
+          chmod +x build_macos.sh
+          ./build_macos.sh ${{ steps.version.outputs.version }}
+
+      - name: Verify outputs
+        run: |
+          ls -lh dist/*.dmg
+          cat dist/*.sha256
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SLATE-Teams-macOS-${{ steps.version.outputs.version }}
+          path: |
+            dist/SLATE-Teams-Setup-*.dmg
+            dist/SLATE-Teams-Setup-*.dmg.sha256
+          retention-days: 90
+
+  # ── 发布到 GitHub Release ─────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          find artifacts -type f | sort
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          files: |
+            artifacts/SLATE-Teams-Windows-${{ steps.version.outputs.version }}/*.exe
+            artifacts/SLATE-Teams-Windows-${{ steps.version.outputs.version }}/*.sha256
+            artifacts/SLATE-Teams-macOS-${{ steps.version.outputs.version }}/*.dmg
+            artifacts/SLATE-Teams-macOS-${{ steps.version.outputs.version }}/*.sha256
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

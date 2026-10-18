@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0A0A">
+  <title>SLATE Teams</title>
+  <link rel="icon" type="image/png" href="./icon.png">
+  <link rel="stylesheet" href="./css/teams.css?v=20261017-001">
+</head>
+<body>
+
+  <!-- 与会者只有这一页：看进度、说话。工作台、设置、文件都不在这条票据的范围内。 -->
+
+  <header id="mh-topbar">
+    <div id="mh-title">SLATE Teams</div>
+    <div id="mh-me"></div>
+    <button id="mh-presence" class="mh-presence" type="button"></button>
+  </header>
+
+  <div id="mh-banner" class="mh-banner hidden"></div>
+
+  <main id="mh-stream" class="mh-stream"></main>
+
+  <footer id="mh-composer" class="mh-composer">
+    <div class="mh-composer-row">
+      <select id="mh-action" class="mh-action"></select>
+      <select id="mh-target" class="mh-target hidden"></select>
+    </div>
+    <div class="mh-composer-row">
+      <textarea id="mh-text" class="mh-text" rows="2"></textarea>
+      <button id="mh-send" class="mh-send" type="button">发言</button>
+    </div>
+    <div id="mh-hint" class="mh-hint"></div>
+  </footer>
+
+  <script type="module" src="./js/teams/meeting.js?v=20261017-001"></script>
+</body>
+</html>

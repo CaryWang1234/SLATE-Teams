@@ -1,0 +1,1466 @@
+/* ══════════════════════════════════════════════════════════
+   team.css — 团队（席 · Ledger）面板：在场 / 议事流 / 待你签字
+   宿主 frontend/index.html 的 #panel-team（桌面页专属；m.html 不引这份）。
+   颜色与圆角只从 style.css 的 :root 令牌取；面板自身的量度走 --tp-*。
+   动作分类的左边框与徽标配色是 scripts/check_team_*.mjs 与
+   .qoder/walk_team_discussion.py 钉着的契约，不是装饰。
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 面板骨架：三栏会议桌 ────────────────────
+   在场（谁在这一场里）｜议事流（说了什么）｜待你签字（只有主持人能做的动作）。
+   三栏同宽都由面板自身宽度算（cqi），不用视口——它嵌在可缩放的工作区里。 */
+
+/* 面板级令牌：团队区块的量度全从这里取，改一处即全块同步。
+   间距按 4/8 节奏，字号只保留四档（层级由字号 + 字重 + 颜色三层叠加，不靠字号乱跳）。
+   container-type 落在面板上：它嵌在可缩放的工作区里，宽度由容器决定，不由视口决定。 */
+/* 显示与否由 .panel / .panel.active 管（style.css）：这里只排方向。
+   写一条 display:flex 会把没选中的页签也画出来——两份规则同特异度，后加载的赢。 */
+.team-panel {
+  --tp-gap: 8px;
+  --tp-pad: 12px;
+  --tp-pad-lg: 16px;
+  --tp-fs-xs: 10px;   /* 徽标 / 角标 */
+  --tp-fs-sm: 11px;   /* 元信息 / 标签 */
+  --tp-fs-md: 12px;   /* 名字 / 控件 */
+  --tp-fs-lg: 13px;   /* 正文发言 */
+  --tp-measure: 72ch; /* 正文行宽上限：宽屏下不铺满整幅 */
+  --tp-rail: clamp(208px, 20cqi, 272px);   /* 在场 */
+  --tp-agenda: clamp(196px, 18cqi, 248px); /* 待你签字 */
+  container-type: inline-size;
+  container-name: team;
+  flex-direction: row;
+  align-items: stretch;
+  flex: 1;
+  font-size: var(--tp-fs-md);
+}
+
+/* 左栏：在场名单与历史场次读的是同一件事——这一场是怎么凑起来的，所以同栏。 */
+.team-rail {
+  width: var(--tp-rail);
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-alt);
+  min-width: 0;
+  min-height: 0;
+}
+
+.team-roster-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.team-roster-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.team-head {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* 议题、轮数、开始/停止 同排：中栏再窄也比过去宽，不需要各自占满整行 */
+.team-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: var(--tp-pad);
+  flex-shrink: 0;
+}
+
+/* 拍板开关挂在右栏栏头下面：它是"这一场要不要等我"的场规，不属于发言流 */
+.team-signoff-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--tp-fs-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* 中栏：议事流 */
+.team-main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 右栏：待你签字——主持人这一侧唯一动得了的地方，条数直接标在栏头 */
+.team-agenda {
+  width: var(--tp-agenda);
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.team-agenda-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.team-agenda-header::after {
+  content: attr(data-count);
+  margin-left: auto;
+  min-width: 16px;
+  padding: 0 4px;
+  font-size: var(--tp-fs-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.team-agenda-header.has-items::after {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+.team-agenda-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.team-agenda-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  border-radius: var(--radius);
+  padding: 7px 8px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition);
+}
+
+.team-agenda-item:hover:not(:disabled) {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.team-agenda-item:focus-visible {
+  outline: 1px solid var(--border-hover);
+  outline-offset: -1px;
+}
+
+.team-agenda-item:disabled { cursor: default; }
+
+/* 三种等待要看得出差别：签字是红墨，等发言是虚线，人不在是点线 */
+.team-agenda-item.is-signoff {
+  border-left-color: var(--gold);
+  color: var(--text);
+  background: var(--gold-dim);
+}
+
+.team-agenda-item.is-waiting { border-left-style: dashed; border-left-color: var(--border-hover); }
+
+.team-agenda-item.is-absent { border-left-style: dotted; border-left-color: var(--border); }
+
+.team-agenda-empty {
+  display: block;
+  padding: 16px 8px;
+  text-align: center;
+  font-size: var(--tp-fs-sm);
+  color: var(--text-faint);
+}
+
+/* 从右栏跳到发言流那一格时的落点标记 */
+@keyframes agenda-focus-flash {
+  from { background: var(--gold-dim); }
+  to   { background: transparent; }
+}
+
+.team-agenda-focus {
+  animation: agenda-focus-flash 0.9s ease-out;
+}
+
+/* 触屏（粗指针）：三栏里要点的全是行与页签，给足 44px（顶栏那颗在 style.css） */
+@media (pointer: coarse) {
+  .team-member-remove,
+  .team-agenda-item,
+  .team-view-tab {
+    min-height: 44px;
+  }
+
+  .team-member-remove {
+    min-width: 44px;
+  }
+
+  .team-history-item {
+    min-height: 44px;
+  }
+}
+
+
+.team-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.team-history-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.team-history-item {
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--transition), background-color var(--transition);
+}
+
+.team-history-item:hover,
+.team-history-item.active {
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+.team-history-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-history-meta,
+.team-history-empty {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.team-history-empty {
+  padding: 16px 8px;
+  text-align: center;
+}
+
+.team-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.team-preset-select {
+  flex: 1;
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  font-size: var(--tp-fs-md);
+  outline: none;
+  cursor: pointer;
+}
+
+.team-preset-select:focus {
+  border-color: var(--accent-bg);
+}
+
+.team-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* 名单要在栏内滚：成员可以加到很多，栏高不能跟着长 */
+.team-members-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 10px;
+}
+
+.team-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px;
+}
+
+.team-member-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  transition: border-color var(--transition);
+}
+
+.team-member-card:hover {
+  border-color: var(--border-hover);
+}
+
+.team-member-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.team-member-avatar {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.team-member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.team-member-name {
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-main);
+  outline: none;
+  padding: 0;
+  width: 100%;
+}
+
+.team-member-model {
+  font-size: 11px;
+  padding: 4px 8px;
+  width: 100%;
+  max-width: 220px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-input);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+}
+
+.team-member-model:focus {
+  border-color: var(--border-hover);
+}
+
+.team-member-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.team-member-remove:hover {
+  color: var(--text);
+}
+
+.team-member-persona {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 6px;
+  font-size: 11px;
+  font-family: var(--font-main);
+  resize: none;
+  outline: none;
+  background: var(--bg-input);
+  color: var(--text);
+  transition: border-color var(--transition);
+}
+
+.team-member-persona:focus {
+  border-color: var(--border-hover);
+}
+
+/* 讨论区域 */
+.team-usage-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 5px var(--tp-pad);
+  font-size: var(--tp-fs-sm);
+  color: var(--text-muted);
+  background: var(--bg-alt);
+  flex-shrink: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* 窄起来先收哪一栏：三栏都留着，只是各自变瘦——待你签字是主持人唯一动得了的地方，
+   把它挤到别处等于把这一场最要紧的一格藏起来。真放不下（≤860）才整体竖排，
+   并把待办换成议事流上面的一条横带。 */
+@media (max-width: 1120px) {
+  .team-rail { width: clamp(184px, 17cqi, 224px); }
+
+  .team-agenda { width: clamp(168px, 15cqi, 208px); }
+}
+
+@media (max-width: 860px) {
+  .team-panel {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .team-rail {
+    width: auto;
+    order: 2;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    max-height: 260px;
+  }
+
+  .team-main {
+    order: 1;
+    overflow: visible;
+  }
+
+  /* 横带：待办从"一列"变成"一行"，条数标在右边 */
+  .team-agenda {
+    width: auto;
+    order: 0;
+    border-left: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .team-agenda-header { border-bottom: none; padding: 6px 10px; }
+
+  .team-agenda-list {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 10px 8px;
+  }
+
+  .team-agenda-item {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 200px;
+    margin-bottom: 0;
+  }
+
+  .team-history-list {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .team-history-item {
+    min-width: 180px;
+  }
+}
+
+.team-signoff-label input {
+  margin: 0;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+.team-topic-input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: var(--font-main);
+  outline: none;
+  background: var(--bg-input);
+  color: var(--text);
+  transition: border-color var(--transition);
+}
+
+.team-topic-input:focus {
+  border-color: var(--border-hover);
+}
+
+.team-topic-input::placeholder {
+  color: var(--text-muted);
+}
+
+.team-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 空态改由 team.js 渲染成真实节点（.team-empty-state）：::before 里的中文绕不过
+   i18n 观察器，英文界面会一直显示中文。 */
+
+.team-topic {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 8px 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  letter-spacing: 0.5px;
+}
+
+.team-response {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  transition: border-color var(--transition);
+}
+
+.team-response:hover {
+  border-color: var(--border-hover);
+}
+
+.team-response-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.team-response-avatar {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.team-response-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.team-response-model {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.team-response-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.team-summary {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--bg-alt);
+  margin-top: 4px;
+}
+
+.team-summary-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.team-summary-content {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.team-summary-content ul {
+  margin: 4px 0 4px 16px;
+}
+
+/* ── 轮次分隔线 ─────────────────────────── */
+
+.debate-round-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 6px 0 2px;
+  letter-spacing: 1px;
+  border-top: 1px dashed var(--border);
+  margin-top: 4px;
+}
+
+/* ── 辩论条目 ───────────────────────────── */
+
+.debate-entry {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  transition: border-color var(--transition), background-color var(--transition);
+}
+
+.debate-entry:hover {
+  border-color: var(--border-hover);
+}
+
+.debate-entry.streaming {
+  border-style: dashed;
+}
+
+/* 动作类型左边框 */
+.debate-entry.action-propose    { border-left: 3px solid var(--text); }
+.debate-entry.action-support    { border-left: 3px solid var(--text-secondary); }
+.debate-entry.action-oppose     { border-left: 3px solid var(--text); background: var(--gold-dim); }
+.debate-entry.action-rebut      { border-left: 3px solid var(--text); background: var(--gold-dim); }
+.debate-entry.action-supplement { border-left: 3px solid var(--text-secondary); }
+.debate-entry.action-verdict    { border-left: 3px solid var(--gold); background: var(--bg-alt); }
+/* 没人说话的两格：失败是"这条请求没成"，未参与是"这位没配 Key"。都不该长得像一条主张 */
+.debate-entry.action-error      { border-left: 3px solid var(--danger); background: var(--danger-dim); }
+.debate-entry.action-skipped    { border-left: 3px dashed var(--border); }
+/* 拍板三格是"人这一侧"的动作：等签字时描红墨，签了才与决策同色，没签要看得见它没签 */
+.debate-entry.action-awaiting   { border-left: 3px solid var(--gold); background: var(--gold-dim); }
+.debate-entry.action-decided    { border-left: 3px solid var(--gold); background: var(--bg-alt); }
+.debate-entry.action-reopened   { border-left: 3px dashed var(--gold); }
+
+/* 红墨在暗底上比原来的金更显，oppose/rebut 这两格照抄 --gold-dim 会把整条发言流
+   洗成一片红，所以深色下按更淡的一档取。比例取自令牌，不留字面色值。 */
+[data-theme="dark"] .debate-entry.action-oppose  { background: color-mix(in srgb, var(--gold) 5%, transparent); }
+[data-theme="dark"] .debate-entry.action-rebut   { background: color-mix(in srgb, var(--gold) 8%, transparent); }
+
+.debate-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.debate-avatar {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.debate-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.debate-action-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.debate-action-badge.action-propose    { background: var(--gold); color: var(--bg); }
+.debate-action-badge.action-support    { background: var(--bg-alt); color: var(--text-secondary); border: 1px solid var(--border); }
+.debate-action-badge.action-oppose     { background: var(--text); color: var(--bg); }
+.debate-action-badge.action-rebut      { background: var(--text); color: var(--bg); }
+.debate-action-badge.action-supplement { background: var(--bg-alt); color: var(--text-secondary); border: 1px solid var(--border); }
+.debate-action-badge.action-verdict    { background: var(--gold); color: var(--bg); }
+.debate-action-badge.action-error      { background: var(--danger); color: var(--bg); }
+.debate-action-badge.action-skipped    { background: transparent; color: var(--text-muted); border: 1px dashed var(--border); }
+.debate-action-badge.action-awaiting   { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
+.debate-action-badge.action-decided    { background: var(--gold); color: var(--bg); }
+.debate-action-badge.action-reopened   { background: transparent; color: var(--text-muted); border: 1px dashed var(--gold); }
+
+.debate-model {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.debate-reply-ref {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  padding-left: 28px;
+}
+
+/* team.js 建出来就带着 hidden，不回应他人时不该占那 4px */
+.debate-reply-ref.hidden { display: none; }
+
+.debate-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  padding-left: 28px;
+}
+
+/* ── 轮数选择器 ─────────────────────────── */
+
+.team-rounds-select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: var(--font-main);
+  outline: none;
+  background: var(--bg-input);
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color var(--transition);
+}
+
+.team-rounds-select:focus {
+  border-color: var(--border-hover);
+}
+
+/* ── 工具执行结果 ─────────────────────────── */
+
+.team-tool-result {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  background: var(--bg-alt);
+  border-left: 2px solid var(--border);
+  margin: 2px 0;
+}
+
+/* ── 团队视图切换（讨论 / 工作流） ─────── */
+
+.team-view-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.team-view-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: var(--font-main);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+.team-view-tab:hover {
+  color: var(--text);
+}
+
+.team-view-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--gold);
+  font-weight: 600;
+}
+
+#team-discuss-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#team-discuss-view.hidden {
+  display: none;
+}
+
+/* ── 工作流视图 ─────────────────────── */
+
+.team-workflow-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  padding: 8px 12px;
+  gap: 8px;
+}
+
+.team-workflow-view.hidden {
+  display: none;
+}
+
+.wf-config {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.wf-select {
+  flex: 1;
+  min-width: 160px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: var(--font-main);
+  background: var(--bg-input);
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.wf-select:focus {
+  border-color: var(--border-hover);
+}
+
+.wf-desc {
+  width: 100%;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.wf-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+.wf-input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  font-size: 12px;
+  font-family: var(--font-main);
+  background: var(--bg-input);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  min-height: 56px;
+  transition: border-color var(--transition);
+}
+
+.wf-input:focus {
+  border-color: var(--border-hover);
+}
+
+.wf-run-status {
+  font-size: 11px;
+  color: var(--text-secondary);
+  min-height: 14px;
+  flex-shrink: 0;
+}
+
+.wf-node-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 80px;
+}
+
+.wf-node {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  transition: border-color var(--transition);
+}
+
+.wf-node:hover {
+  border-color: var(--border-hover);
+}
+
+.wf-node[data-status="running"] {
+  border-style: dashed;
+  border-color: var(--gold);
+}
+
+.wf-node[data-status="success"] {
+  border-left: 3px solid var(--gold);
+}
+
+.wf-node[data-status="failed"] {
+  border-left: 3px solid var(--danger);
+}
+
+.wf-node[data-status="skipped"] {
+  opacity: 0.65;
+}
+
+.wf-node-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wf-node-status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius);
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.wf-node[data-status="running"] .wf-node-status {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+.wf-node[data-status="success"] .wf-node-status {
+  background: var(--gold);
+  color: var(--bg);
+  border-color: var(--gold);
+}
+
+.wf-node[data-status="failed"] .wf-node-status {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.wf-node-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wf-node-bind {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.wf-node-caret {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.wf-node-detail {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wf-node-detail.hidden {
+  display: none;
+}
+
+.wf-node-io-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.wf-node-io pre {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--bg-alt);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.wf-node-error {
+  font-size: 11px;
+  color: var(--danger);
+  line-height: 1.5;
+}
+
+.wf-result-bar {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.wf-result-bar .wf-result-ok {
+  color: var(--text);
+}
+
+.wf-result-bar .wf-result-error {
+  color: var(--danger);
+}
+
+/* ── 团队面板 · 改版增补（量度 / 状态 / 响应式 / 动效）────────────
+   上面逐条规则不动：动作分类的左边框与徽标配色是 scripts/check_team_*.mjs 与
+   .qoder/walk_team_discussion.py 钉着的契约，不是装饰。这里只补"面板级"的东西——
+   正文行宽、轮次标尺、拍板横幅、空态、容器查询、触控目标。
+   量度一律取 .team-panel 上的 --tp-* 令牌。 */
+
+.team-output {
+  gap: var(--tp-gap);
+  padding: var(--tp-pad);
+}
+
+.team-topic {
+  font-size: var(--tp-fs-lg);
+}
+
+/* 行宽上限：宽屏下发言不铺满整幅，长段落才读得下去 */
+.debate-content,
+.team-summary-content,
+.team-response-content {
+  max-width: var(--tp-measure);
+}
+
+/* 轮次从"一条虚线加居中细字"改成分轮标尺：标签贴左，余下用发丝线收尾 */
+.debate-round-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 0;
+  border-top: none;
+  text-align: left;
+  font-size: var(--tp-fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.debate-round-header::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.debate-entry {
+  padding: 10px var(--tp-pad);
+  outline: none;
+}
+
+.debate-entry:focus-visible {
+  border-color: var(--border-hover);
+}
+
+.debate-name {
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 拍板是整场唯一的"等你一句话"时刻：给足留白，描金交给上面那条 action-awaiting */
+.debate-entry.action-awaiting {
+  padding: var(--tp-pad) var(--tp-pad-lg);
+}
+
+/* 用量条：模型名当标签，分隔符把 `|` 字形换成发丝线，数字用等宽数字对齐 */
+/* 用量条：分隔符把 `|` 字形换成发丝线，数字用等宽数字对齐（量度在上面的基础规则） */
+.team-usage-bar .usage-model {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.team-usage-bar .usage-stat {
+  font-variant-numeric: tabular-nums;
+}
+
+.team-usage-bar .usage-sep {
+  display: inline-block;
+  width: 0;
+  height: 9px;
+  margin: 0 9px;
+  border-left: 1px solid var(--border);
+  color: transparent;
+  overflow: hidden;
+}
+
+/* 空态：真实节点（见 team.js showTeamEmptyState），所以走得通 i18n */
+.team-empty-state {
+  margin: auto;
+  padding: var(--tp-pad-lg);
+  text-align: center;
+  font-size: var(--tp-fs-md);
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+}
+
+.team-member-card {
+  padding: var(--tp-gap) 10px;
+}
+
+.team-member-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: var(--tp-fs-md);
+}
+
+.team-member-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+  border-radius: var(--radius);
+  outline: none;
+}
+
+.team-member-remove:hover,
+.team-member-remove:focus-visible {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+.team-history-item {
+  outline: none;
+}
+
+.team-history-item:focus-visible {
+  border-color: var(--border-hover);
+}
+
+.team-history-title {
+  font-size: var(--tp-fs-md);
+}
+
+.team-history-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: var(--tp-fs-xs);
+  color: var(--text-secondary);
+}
+
+.team-view-tabs {
+  gap: 2px;
+  padding: var(--tp-gap) var(--tp-pad) 0;
+}
+
+.team-view-tab {
+  padding: 7px 12px;
+  outline: none;
+}
+
+.team-view-tab:focus-visible {
+  color: var(--text);
+  border-bottom-color: var(--border-hover);
+}
+
+.wf-node {
+  padding: var(--tp-gap) 10px;
+}
+
+.wf-node-status {
+  font-size: var(--tp-fs-xs);
+  letter-spacing: 0.06em;
+}
+
+.wf-node-io pre {
+  font-size: var(--tp-fs-sm);
+}
+
+.wf-node-caret {
+  transition: transform var(--transition);
+}
+
+/* ▸ 只是装饰，展开状态由 aria-expanded 说出来（键盘也能改它） */
+.wf-node-head[aria-expanded="true"] .wf-node-caret {
+  transform: rotate(90deg);
+}
+
+/* 容器查询：面板窄了先收名单与行宽——按"它自己有多宽"收，不按视口。
+   注意不能在这里改 .team-panel 自己（容器查不到自身），三栏怎么塌仍由上面的视口媒体查询管。 */
+@container team (max-width: 1040px) {
+  .team-members-area {
+    max-height: 224px;
+  }
+
+  .debate-name {
+    max-width: 16ch;
+  }
+}
+
+@container team (max-width: 820px) {
+  .debate-content,
+  .team-summary-content,
+  .team-response-content {
+    max-width: none;
+  }
+
+  .team-members-area {
+    max-height: 168px;
+  }
+}
+
+/* 窄到这份上：输入行自己折行，议题占满整行 */
+@container team (max-width: 560px) {
+  .team-input-row,
+  .wf-config {
+    flex-wrap: wrap;
+  }
+
+  .team-topic-input {
+    flex-basis: 100%;
+  }
+
+  .team-output {
+    padding: 10px;
+  }
+}
+
+/* 发言落地：只有"这一条刚说完"（streaming 摘掉的那一刻）入场，且给"减少动态效果"让路 */
+@keyframes team-entry-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.debate-entry:not(.streaming) {
+  animation: team-entry-in 0.15s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .debate-entry:not(.streaming) {
+    animation: none;
+  }
+
+  .team-agenda-focus {
+    animation: none;
+  }
+}
+
+
+/* 团队模式工具结果 */
+.team-tool-result {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  background: var(--bg-alt);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+
+/* 团队成员卡的专家包行 */
+.team-member-expert-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.team-member-expert-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.team-member-expert-row .member-expert-select {
+  flex: 1;
+}
+
+
+/* ── 真人席位（SLATE Teams）────────────────────────────
+   与模型席位共用同一张名册：视觉上只多两样东西——来源徽标与在线点，
+   头像/名字/移除都沿用同一套，免得读成两种不同的东西。 */
+
+.team-member-card.is-human {
+  background: var(--bg-alt);
+}
+
+.team-member-kind {
+  font-size: var(--tp-fs-xs, 10px);
+  color: var(--accent-fg);
+  background: var(--accent-bg);
+  border-radius: var(--radius);
+  padding: 1px 6px;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+/* 在线点三态：空心＝没加入过，灰＝加入过但心跳过期（暂离），绿＝在线 */
+.team-member-presence {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--border-hover);
+  flex-shrink: 0;
+}
+
+.team-member-presence.online { background: var(--ok); border-color: var(--ok); }
+.team-member-presence.away { background: var(--text-faint); border-color: var(--text-faint); }
+
+.team-human-seat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.team-human-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.team-human-label {
+  font-size: var(--tp-fs-sm, 11px);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.team-human-cap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--tp-fs-sm, 11px);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.team-human-timeout {
+  width: 68px;
+  flex-shrink: 0;
+}
+
+.team-invite-btn {
+  font-size: var(--tp-fs-sm, 11px);
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.team-invite-btn:hover:not(:disabled) { border-color: var(--border-hover); }
+
+.team-invite-url {
+  font-size: var(--tp-fs-xs, 10px);
+  color: var(--text-muted);
+  word-break: break-all;
+  user-select: all;
+}
+
+.team-invite-url.ready {
+  color: var(--accent-fg);
+  background: var(--accent-bg);
+  padding: 2px 6px;
+  border-radius: var(--radius);
+}
+
+/* 等真人发言那一格：与发言区分开，也不参与落账 */
+.debate-entry.action-waiting .debate-content { color: var(--text-muted); }
+
+.team-await-controls {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.team-await-btn {
+  font-size: var(--tp-fs-sm, 11px);
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.team-await-btn:hover { border-color: var(--border-hover); }
+.team-await-btn.primary {
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+  border-color: var(--accent-bg);
+}
+
+/* 系统提示行（超时、代笔）：不属于任何人的发言 */
+.team-notice {
+  font-size: var(--tp-fs-sm, 11px);
+  color: var(--text-muted);
+  padding: 2px 0 2px 32px;
+}
+
+/* 代笔标记：这句话是人说的、由 AI 代笔——两件事都必须看得出来 */
+.debate-proxy-note {
+  font-size: var(--tp-fs-xs, 10px);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 6px;
+  margin-left: 6px;
+}
+
