@@ -8,9 +8,9 @@
  * 完全访问红（没有安全网），夜间模式夜紫（这一晚交给它）。
  */
 
-import { state, subscribe, permissionModeFor, setPermissionModeFor } from "../store.js?v=20261017-001";
-import { iconSvgEl } from "../services/icons.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
+import { state, subscribe, permissionModeFor, setPermissionModeFor } from "../store.js?v=20261024-001";
+import { iconSvgEl } from "../services/icons.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
 
 const MODES = [
   { id: "ask", icon: "shield", label: "手动审批", hint: "执行命令与访问网络前均先询问" },

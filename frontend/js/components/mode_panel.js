@@ -12,14 +12,14 @@
 import {
   subscribe, modeRegistry, modeById, addMode, updateMode, removeMode,
   MODE_TOOLS_NONE, MODE_READONLY_TOOLS,
-} from "../store.js?v=20261017-001";
-import { TOOLS } from "../services/tools.js?v=20261017-001";
-import { iconSvgEl } from "../services/icons.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { dlgConfirm } from "../services/dialog.js?v=20261017-001";
-import { allRegisteredModels } from "../services/ai_features.js?v=20261017-001";
-import { setExtCount } from "./extensions.js?v=20261017-001";
-import { modeHint } from "./mode_picker.js?v=20261017-001";
+} from "../store.js?v=20261024-001";
+import { TOOLS } from "../services/tools.js?v=20261024-001";
+import { iconSvgEl } from "../services/icons.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { dlgConfirm } from "../services/dialog.js?v=20261024-001";
+import { allRegisteredModels } from "../services/ai_features.js?v=20261024-001";
+import { setExtCount } from "./extensions.js?v=20261024-001";
+import { modeHint } from "./mode_picker.js?v=20261024-001";
 
 // 可选图标：够表达"这个模式是干什么的"即可，不做全量图标库（挑花眼反而选不出）。
 const ICON_PALETTE = [

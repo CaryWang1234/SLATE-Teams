@@ -17,11 +17,11 @@
 import {
   state, subscribe, setModeFor, activeModeIdFor, modeRegistry, setReasoningEffort,
   reasoningCapabilityOf, reasoningLevelsOf, REASONING_COLLAPSED_CAPS,
-} from "../store.js?v=20261017-001";
-import { get } from "../services/api.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { iconSvgEl } from "../services/icons.js?v=20261017-001";
-import { renderStarMap, highlightStar, memberHue } from "../services/star_map.js?v=20261017-001";
+} from "../store.js?v=20261024-001";
+import { get } from "../services/api.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { iconSvgEl } from "../services/icons.js?v=20261024-001";
+import { renderStarMap, highlightStar, memberHue } from "../services/star_map.js?v=20261024-001";
 
 const PREF_KEY = "slate_board_wf_prefs";
 const TICK_MS = 1000;
@@ -333,7 +333,7 @@ function buildRunBar() {
   bar.append(stop, resume, autopilot, modeSel, effortSel);
   bar.append(
     btn(t("去团队"), t("到对话面板的团队模式"), async () => {
-      const { openTeamConversation } = await import("../app.js?v=20261017-001");
+      const { openTeamConversation } = await import("../app.js?v=20261024-001");
       openTeamConversation?.();
     }),
   );

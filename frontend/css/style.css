@@ -177,26 +177,23 @@ code {
 
 /* 席 · Ledger 的牌子：一块红墨底上落两道格线。不用原作那颗圆砚，也不用位图。 */
 .logo-icon {
-  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 22px;
   height: 22px;
   border-radius: 0;
-  background: var(--gold);
+  background: var(--gold-dim);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
-.logo-icon::before,
-.logo-icon::after {
-  content: "";
-  position: absolute;
-  left: 5px;
-  right: 5px;
-  height: 2px;
-  background: var(--accent-fg);
+/* 顶栏这颗就是 SLATE 那枚位图：两横条的纯 CSS mark 在 22px 下读起来是「二」，已撤 */
+.logo-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
-
-.logo-icon::before { top: 6px; }
-.logo-icon::after { top: 13px; }
 
 .logo {
   font-size: 18px;
@@ -11620,7 +11617,7 @@ html[data-ui="codex"] #codex-dock-history {
 /* 对话面板：收起项目树/历史/头部，内容铺满 */
 html[data-ui="codex"] #project-sidebar,
 html[data-ui="codex"] .resize-handle,
-html[data-ui="codex"] #panel-chat .panel-header,
+html[data-ui="codex"] #office-view-chat .panel-header,
 html[data-ui="codex"] #usage-bar {
   display: none !important;
 }

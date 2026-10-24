@@ -6,10 +6,10 @@
  * - 用户批准后注入 approved 参数放行；拒绝后把拒绝理由原样回给模型
  */
 
-import { state, getModelKey, permissionModeFor } from "../store.js?v=20261017-001";
-import { post } from "./api.js?v=20261017-001";
-import { aiModelFor, isAiFeatureOn } from "./ai_features.js?v=20261017-001";
-import { t } from "./i18n.js?v=20261017-001";
+import { state, getModelKey, permissionModeFor } from "../store.js?v=20261024-001";
+import { post } from "./api.js?v=20261024-001";
+import { aiModelFor, isAiFeatureOn } from "./ai_features.js?v=20261024-001";
+import { t } from "./i18n.js?v=20261024-001";
 
 // 高危命令规则（写死）：命中任一条即要求批准
 const HIGH_RISK_PATTERNS = [

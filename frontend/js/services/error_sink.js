@@ -13,7 +13,7 @@
  * - 不外泄凭据：URL 只取 origin+path，query 里的 slate_lan_token 不进日志。
  */
 
-import { API_BASE } from "../store.js?v=20261017-001";
+import { API_BASE } from "../store.js?v=20261024-001";
 
 const MAX_REPORTS = 30;          // 单次会话上报上限
 const MAX_STACK_LINES = 24;      // 只留最近的栈帧，足够定位又不至于把整段求值栈贴回来

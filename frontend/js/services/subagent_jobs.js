@@ -10,8 +10,8 @@
  * 复活成"看着在跑其实早死了"比直接没了更糟）。面板上本地任务的说明按这个写。
  */
 
-import { upsertLocalTask, pushLocalBgEvent, registerLocalTaskStopper, startBgPolling } from "./bg_tasks.js?v=20261017-001";
-import { runSubAgents } from "./subagent.js?v=20261017-001";
+import { upsertLocalTask, pushLocalBgEvent, registerLocalTaskStopper, startBgPolling } from "./bg_tasks.js?v=20261024-001";
+import { runSubAgents } from "./subagent.js?v=20261024-001";
 
 /** 同时在跑的后台批次数：一批最多 5 个子代理，不设上限等于让模型自己开线程池 */
 export const BG_SUBAGENT_MAX_JOBS = 3;

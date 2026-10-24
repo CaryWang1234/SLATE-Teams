@@ -9,9 +9,9 @@
  * 的会话"，用户会以为自己没归档成，转头再去点一遍归档按钮。
  */
 
-import { get, patch, del } from "../services/api.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { dlgConfirm, dlgToast } from "../services/dialog.js?v=20261017-001";
+import { get, patch, del } from "../services/api.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { dlgConfirm, dlgToast } from "../services/dialog.js?v=20261024-001";
 
 // 标题是用户自己写的，不许原样拼进 innerHTML
 function esc(s) {
@@ -87,7 +87,7 @@ function buildRow(conv, list) {
     await renderArchivedSessions();
     // 动态 import 而不是顶层引 chat.js：它和 app.js 互相引，静态引会绕成环。
     // 走这个入口而不是自己 notify——它顺带把 Codex 侧栏与任务徽标一起对齐。
-    const { refreshConversationList } = await import("./chat.js?v=20261017-001");
+    const { refreshConversationList } = await import("./chat.js?v=20261024-001");
     await refreshConversationList();
   });
   actions.appendChild(restoreBtn);

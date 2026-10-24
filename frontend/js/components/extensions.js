@@ -6,7 +6,7 @@
  * 分栏轨上的数字与右侧标题上的数字必须是同一个来源，否则一刷新就各说各话。
  */
 
-import { t } from "../services/i18n.js?v=20261017-001";
+import { t } from "../services/i18n.js?v=20261024-001";
 
 const EXT_SECTIONS = [
   { key: "skills", label: "技能" },

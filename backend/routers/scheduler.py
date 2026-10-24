@@ -209,14 +209,23 @@ def _default_watch_paths(task: dict[str, Any]) -> list[Path]:
     return [Path(host)] if host else []
 
 
-def _check_git_push(task: dict[str, Any]) -> bool:
-    """检查 Git push 事件：比较 HEAD hash 是否变化。"""
-    repo_path = task.get("git_repo", "").strip()
-    if not repo_path:
-        return False
-    rp = Path(repo_path)
-    if not (rp / ".git").exists():
-        return False
+def resolve_repo_path(raw: Any) -> Path | None:
+    """把配置里那个仓库路径认成一个真有 .git 的目录；认不出返回 None。
+
+    探测与快照两处都要这一句，写成两份的话「界面说仓库有效、时钟说无效」这种
+    说不清的分歧只是时间问题。
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    rp = Path(text)
+    return rp if (rp / ".git").exists() else None
+
+
+def read_git_head(rp: Path | None) -> str:
+    """读一次 HEAD：git 没装、目录不在、命令失败都返回空串，不外抛。"""
+    if rp is None:
+        return ""
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -224,24 +233,61 @@ def _check_git_push(task: dict[str, Any]) -> bool:
             **hidden_subprocess_kwargs(),
         )
         if result.returncode != 0:
-            return False
-        current_head = result.stdout.strip()
-        key = str(rp.resolve())
-        if key in _git_heads and current_head != _git_heads[key]:
-            _git_heads[key] = current_head
-            return True
-        _git_heads[key] = current_head
+            return ""
+        return result.stdout.strip()
     except Exception:
-        pass
+        return ""
+
+
+def _check_git_push(task: dict[str, Any]) -> bool:
+    """检查 Git push 事件：比较 HEAD hash 是否变化。"""
+    rp = resolve_repo_path(task.get("git_repo", ""))
+    if rp is None:
+        return False
+    current_head = read_git_head(rp)
+    if not current_head:
+        return False
+    key = str(rp.resolve())
+    if key in _git_heads and current_head != _git_heads[key]:
+        _git_heads[key] = current_head
+        return True
+    _git_heads[key] = current_head
     return False
 
 
 def _check_webhook(task: dict[str, Any]) -> bool:
     """检查是否有待处理的 webhook 触发。"""
     task_id = task.get("id", "")
-    # 只判断不消费：payload 由 _run_task 在真正注入提示词时取出，
+    # 只判断不消费：payload 由 build_event_context 在真正注入提示词时取出，
     # 避免这里清空后异步任务读到空列表
     return bool(_pending_webhooks.get(task_id))
+
+
+def build_event_context(task: dict[str, Any]) -> list[str]:
+    """事件触发时要写进提示词的那段上下文；webhook 的 payload 在这一句被消费。
+
+    定时任务与员工值班共用这一份措辞：两条路各写一遍的话，
+    「值班表里没写触发原因」这种缺陷不会报错，只会让模型少知道一件事。
+    """
+    event_type = task.get("event_type", "")
+    parts: list[str] = []
+    if event_type == "file_change":
+        changed_files = [p_str for p_str, mtime in _file_mtimes.items()
+                         if time.time() - mtime < 120]  # 2 分钟内变更的
+        parts.append(f"触发原因：文件变更\n最近变更文件：{', '.join(changed_files[-10:])}")
+    elif event_type == "git_push":
+        rp = resolve_repo_path(task.get("git_repo", ""))
+        head = _git_heads.get(str(rp.resolve()), "") if rp else ""
+        parts.append(f"触发原因：Git push 检测\n仓库：{task.get('git_repo', '')}\n最新 HEAD：{head[:12]}")
+    elif event_type == "webhook":
+        payloads = _pending_webhooks.pop(task.get("id", ""), [])
+        parts.append("触发原因：Webhook 回调")
+        if payloads:
+            try:
+                parts.append(f"Payload: {json.dumps(payloads[-1], ensure_ascii=False)[:2000]}")
+            except Exception:
+                pass
+    return parts
 
 
 def _should_run_event(task: dict[str, Any]) -> bool:
@@ -282,19 +328,10 @@ def _init_event_snapshots() -> None:
                     except OSError:
                         pass
         elif event_type == "git_push":
-            repo_path = task.get("git_repo", "").strip()
-            rp = Path(repo_path)
-            if (rp / ".git").exists():
-                try:
-                    result = subprocess.run(
-                        ["git", "rev-parse", "HEAD"],
-                        cwd=str(rp), capture_output=True, text=True, timeout=10,
-                        **hidden_subprocess_kwargs(),
-                    )
-                    if result.returncode == 0:
-                        _git_heads[str(rp.resolve())] = result.stdout.strip()
-                except Exception:
-                    pass
+            rp = resolve_repo_path(task.get("git_repo", ""))
+            head = read_git_head(rp)
+            if rp and head:
+                _git_heads[str(rp.resolve())] = head
 
 
 # ── 任务执行 ──────────────────────────────────
@@ -319,30 +356,9 @@ async def _run_task(task: dict[str, Any]) -> None:
         _finish_run(task, error="「定时与事件任务」已在设置中关闭（设置 → AI 辅助功能）")
         return
 
-    # 事件模式：注入触发上下文
+    # 事件模式：注入触发上下文（话术与员工值班共用 build_event_context 那一份）
     if task.get("mode") == "event":
-        event_type = task.get("event_type", "")
-        context_parts = []
-        if event_type == "file_change":
-            # 找出最近变更的文件
-            changed_files = []
-            for p_str, mtime in _file_mtimes.items():
-                if time.time() - mtime < 120:  # 2 分钟内变更的
-                    changed_files.append(p_str)
-            context_parts.append(f"触发原因：文件变更\n最近变更文件：{', '.join(changed_files[-10:])}")
-        elif event_type == "git_push":
-            repo = task.get("git_repo", "")
-            head = _git_heads.get(str(Path(repo).resolve()), "")
-            context_parts.append(f"触发原因：Git push 检测\n仓库：{repo}\n最新 HEAD：{head[:12]}")
-        elif event_type == "webhook":
-            # 消费队列：取出后清空，payload 真正进入提示词
-            payloads = _pending_webhooks.pop(task.get("id", ""), [])
-            context_parts.append(f"触发原因：Webhook 回调")
-            if payloads:
-                try:
-                    context_parts.append(f"Payload: {json.dumps(payloads[-1], ensure_ascii=False)[:2000]}")
-                except Exception:
-                    pass
+        context_parts = build_event_context(task)
         if context_parts:
             prompt = f"{prompt}\n\n---\n事件上下文：\n" + "\n".join(context_parts)
 

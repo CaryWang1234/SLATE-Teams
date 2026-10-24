@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from backend.routers import actions, bg_tasks, chat, constitution, diagnostics, events, evolved, experts, files, grind, i18n, keep_awake, knowledge, lan, mcp, mcp_servers, proxy, projects, scheduler, settings, skills, teams, theme, typing, update, vault, workflows
+from backend.routers import actions, bg_tasks, chat, constitution, diagnostics, events, evolved, experts, files, grind, i18n, keep_awake, knowledge, lan, mcp, mcp_servers, office, proxy, projects, scheduler, settings, skills, teams, theme, typing, update, vault, workflows
 from backend import evolution, keepawake, mcp_client
 from backend.skills import bg_task as bg_task_skill
 
@@ -96,6 +96,7 @@ app.include_router(update.router, prefix="/api")
 app.include_router(knowledge.router, prefix="/api")
 app.include_router(experts.router, prefix="/api")
 app.include_router(scheduler.router, prefix="/api")
+app.include_router(office.router, prefix="/api")
 app.include_router(workflows.router, prefix="/api")
 app.include_router(lan.router, prefix="/api")
 app.include_router(i18n.router, prefix="/api")
@@ -119,6 +120,12 @@ if HAS_SYSTEM_INFO:
 async def _start_schedule_loop():
     """启动定时任务后台循环。"""
     scheduler.start_scheduler()
+
+
+@app.on_event("startup")
+async def _start_office_clock():
+    """启动办公室时钟：员工值班表到点只排队，执行仍由主持人页面领走。"""
+    office.start_office_clock()
 
 
 @app.on_event("startup")

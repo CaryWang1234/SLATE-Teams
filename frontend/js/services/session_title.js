@@ -12,9 +12,9 @@
  *    那时无脑覆盖就是「我改了名字，它自己又变回去了」。
  */
 
-import { state, notify, messagesOf } from "../store.js?v=20261017-001";
-import { aiModelFor, isAiFeatureOn } from "./ai_features.js?v=20261017-001";
-import { patch, streamChat, REASONING_PREFIX, REASONING_INLINE_PREFIX } from "./api.js?v=20261017-001";
+import { state, notify, messagesOf } from "../store.js?v=20261024-001";
+import { aiModelFor, isAiFeatureOn } from "./ai_features.js?v=20261024-001";
+import { patch, streamChat, REASONING_PREFIX, REASONING_INLINE_PREFIX } from "./api.js?v=20261024-001";
 
 // 24 字是侧栏一行放得下的长度；后端 PATCH 还会再截到 60，这里先按界面截。
 const MAX_TITLE_CHARS = 24;

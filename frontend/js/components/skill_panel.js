@@ -3,14 +3,14 @@
  * + Actions（data/actions/*.yml 流程说明书：可编辑、试校验、删除、留底回滚）。
  */
 
-import { state, subscribe, setSkills, setActions } from "../store.js?v=20261017-001";
-import { get, post, put, del, upload } from "../services/api.js?v=20261017-001";
-import { guardSkillCall } from "../services/riskguard.js?v=20261017-001";
-import { dlgConfirm, dlgPrompt } from "../services/dialog.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { setIconText } from "../services/icons.js?v=20261017-001";
-import { forgetScopeCatalog } from "../services/project_scope.js?v=20261017-001";
-import { setExtCount } from "./extensions.js?v=20261017-001";
+import { state, subscribe, setSkills, setActions } from "../store.js?v=20261024-001";
+import { get, post, put, del, upload } from "../services/api.js?v=20261024-001";
+import { guardSkillCall } from "../services/riskguard.js?v=20261024-001";
+import { dlgConfirm, dlgPrompt } from "../services/dialog.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { setIconText } from "../services/icons.js?v=20261024-001";
+import { forgetScopeCatalog } from "../services/project_scope.js?v=20261024-001";
+import { setExtCount } from "./extensions.js?v=20261024-001";
 
 let skillList, toolList, mcpToolList, actionList;
 let btnUpload, btnImport, btnDiscover, btnGithubImport, skillModal, skillModalTitle, skillParams, skillResult, btnRunSkill;

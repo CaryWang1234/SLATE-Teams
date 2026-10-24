@@ -1,0 +1,1426 @@
+/* ══════════════════════════════════════════════════════════
+   office.css — 办公室（席 · Ledger）面板：花名册 / 工位平面图 / 动态、等你拍板、值班表与岗位
+   宿主 frontend/index.html 的 #panel-office（桌面页专属；m.html 不引这份）。
+   颜色与圆角只从 style.css 的 :root 令牌取；面板自身的量度走 --op-*。
+   工位状态灯（idle/busy/waiting）与 data-status 接线是
+   scripts/check_office.mjs 与 .qoder/walk_office.py 钉着的契约，不是装饰。
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 面板骨架：三栏 ─────────────────────────────
+   花名册（有谁）｜办公室（正在干什么）｜右侧动态、值班表与岗位（说过什么、排了什么班）。
+   宽度全由面板自身算（cqi）：它嵌在可缩放的工作区里，不该跟视口绑。 */
+.office-panel {
+  --op-gap: 8px;
+  --op-pad: 12px;
+  --op-pad-lg: 16px;
+  --op-fs-xs: 10px;
+  --op-fs-sm: 11px;
+  --op-fs-md: 12px;
+  --op-fs-lg: 13px;
+  --op-measure: 68ch;
+  --op-roster: clamp(184px, 18cqi, 244px);
+  --op-side: clamp(248px, 26cqi, 360px);
+  --op-desk: 172px;
+  --op-masthead: 44px;
+  container-type: inline-size;
+  container-name: office;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1;
+  font-size: var(--op-fs-md);
+}
+
+/* 顶层只剩「办公室」：对话与工位是这一页的两面，外壳只负责把 masthead 和当前那一面竖着排 */
+.office-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.office-view {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.office-view.active {
+  display: flex;
+  flex-direction: column;
+  animation: office-view-in 160ms ease-out;
+}
+
+@keyframes office-view-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── masthead：这一页的名字、办公室实况、两面切换 ───── */
+.office-masthead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  height: var(--op-masthead);
+  padding: 0 var(--op-pad);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.office-masthead-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+/* 方块墨印：与顶栏那枚同族，但这里是办公室自己的门牌，不抢品牌位 */
+.office-masthead-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--gold) 36%, var(--border));
+  background: var(--gold-dim);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.office-masthead-name {
+  font-size: var(--op-fs-lg);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.office-masthead-sub {
+  padding-left: 9px;
+  border-left: 1px solid var(--border);
+  font-size: var(--op-fs-xs);
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.office-masthead-live {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: var(--op-fs-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.office-masthead-live > span + span {
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+}
+
+.office-masthead-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* 等你拍板：在「对话」那一面也看得见的红墨小旗，点它直接翻到工位那一栏 */
+.office-pending-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--danger) 34%, var(--border));
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--danger);
+  font: inherit;
+  font-size: var(--op-fs-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.office-pending-pill:hover { background: var(--danger-dim); }
+
+.office-pending-pill[hidden] { display: none; }
+
+.office-pending-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.office-pending-pill-count {
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  padding-left: 6px;
+  border-left: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
+}
+
+.office-pending-pill-count:empty { display: none; }
+
+/* 两面切换：滑块走 transform，圆角与明暗都跟宿主令牌走 */
+.office-view-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-width: 136px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-alt);
+}
+
+.office-view-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border: 1px solid var(--border-hover);
+  background: var(--bg-card);
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.office-view-thumb[data-view="desk"] { transform: translateX(100%); }
+
+.office-view-tab {
+  position: relative;
+  z-index: 1;
+  padding: 5px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--op-fs-sm);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition);
+}
+
+.office-view-tab:hover { color: var(--text); }
+
+.office-view-tab.active {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.office-view-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.office-view-chat .chat-layout {
+  flex: 1;
+  min-height: 0;
+}
+
+.office-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.office-pane-head,
+.office-floor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--op-gap);
+  padding: var(--op-pad) var(--op-pad) 6px;
+  flex-shrink: 0;
+}
+
+.office-pane-title {
+  font-size: var(--op-fs-sm);
+  letter-spacing: var(--label-tracking, 0.08em);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── 左栏：花名册 ──────────────────────────────── */
+.office-roster {
+  width: var(--op-roster);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+
+.office-roster-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--op-pad) var(--op-gap);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.office-roster-foot {
+  border-top: 1px solid var(--border);
+  padding: 6px var(--op-pad);
+  font-size: var(--op-fs-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.office-emp {
+  display: grid;
+  grid-template-columns: 22px 1fr 10px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid transparent;
+  text-align: left;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+
+.office-emp:hover {
+  background: var(--bg);
+}
+
+.office-emp:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.office-emp.selected {
+  border-color: var(--border-hover);
+  background: var(--bg-card);
+}
+
+.office-emp-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--op-fs-md);
+}
+
+.office-emp-role {
+  display: block;
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-emp-count {
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 状态灯：一枚方角小块。层次只靠颜色与不透明度，不做圆点与光晕。 */
+.office-lamp {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  background: var(--text-muted);
+  opacity: 0.3;
+}
+
+.office-lamp[data-status="busy"] {
+  background: var(--accent);
+  opacity: 1;
+}
+
+.office-lamp[data-status="waiting"] {
+  background: var(--task-needs);
+  opacity: 1;
+}
+
+.office-lamp[data-status="off"] {
+  background: var(--text-faint);
+  opacity: 1;
+}
+
+/* 头像方块：色相由名册上的 hue 现算（不写死色值，跟着用户给的那一格走） */
+.office-mark {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: var(--op-fs-sm);
+  line-height: 1;
+  border: 1px solid currentColor;
+  color: hsl(var(--office-hue, 0) 42% 40%);
+  background: hsl(var(--office-hue, 0) 42% 40% / 0.08);
+  flex-shrink: 0;
+}
+
+.office-mark.is-lg {
+  width: 26px;
+  height: 26px;
+  font-size: var(--op-fs-md);
+}
+
+[data-theme="dark"] .office-mark {
+  color: hsl(var(--office-hue, 0) 55% 70%);
+  background: hsl(var(--office-hue, 0) 55% 70% / 0.14);
+}
+
+/* ── 中栏：工位平面图 ──────────────────────────── */
+.office-floor-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+
+.office-floor-hint {
+  font-size: var(--op-fs-xs);
+  color: var(--text-faint);
+}
+
+.office-floor {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px var(--op-pad) var(--op-pad);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--op-desk), 1fr));
+  gap: var(--op-gap);
+  align-content: start;
+}
+
+/* 一张工位：谁、什么灯、此刻在说什么。不抬升、不投影。 */
+.office-desk {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+.office-desk:hover {
+  border-color: var(--border-hover);
+}
+
+.office-desk:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.office-desk.selected {
+  border-color: var(--accent);
+}
+
+.office-desk[data-status="busy"] {
+  border-left: 3px solid var(--accent);
+}
+
+.office-desk[data-status="waiting"] {
+  border-left: 3px solid var(--task-needs);
+}
+
+.office-desk-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 名字那一格要能截断：不写 min-width:0，长名字会把整张工位撑破 */
+.office-desk-names {
+  min-width: 0;
+  flex: 1;
+}
+
+.office-desk-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--op-fs-lg);
+}
+
+.office-desk-role {
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-lamp.is-end {
+  margin-left: auto;
+}
+
+.office-desk-line {
+  font-size: var(--op-fs-sm);
+  color: var(--text-muted);
+  min-height: 2.6em;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.office-desk-meta {
+  display: flex;
+  gap: 8px;
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  flex-wrap: wrap;
+}
+
+/* 挂在等人那一栏的条数：红墨那一侧，别和"待办"混成一样事 */
+.office-desk-wait {
+  color: var(--danger);
+}
+
+/* 同事之间那句话：贴在工位上方，几秒后自己收掉 */
+.office-bubble {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% - 4px);
+  z-index: 2;
+  padding: 6px 8px;
+  border: 1px solid var(--border-hover);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--op-fs-sm);
+  line-height: 1.45;
+  max-height: 96px;
+  overflow: hidden;
+  pointer-events: none;
+  animation: office-bubble-in 180ms ease-out;
+}
+
+.office-bubble.is-out {
+  opacity: 0;
+  transition: opacity 320ms ease-out;
+}
+
+@keyframes office-bubble-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 空态是真 DOM（CSS content: 的字符串不可翻译） */
+.office-empty {
+  grid-column: 1 / -1;
+  border: 1px dashed var(--border-hover);
+  padding: var(--op-pad-lg);
+  color: var(--text-muted);
+  font-size: var(--op-fs-md);
+  line-height: 1.6;
+}
+
+.office-empty b {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.office-floor.is-empty {
+  place-content: center;
+}
+
+/* 空办公室不是一块"这里没东西"的灰区：把招人、交办、验收三步摆在最显眼的地方 */
+.office-empty.is-hero {
+  grid-column: 1 / -1;
+  align-self: center;
+  justify-self: center;
+  width: min(560px, 100%);
+  padding: 24px 22px;
+  border-style: solid;
+  background: var(--bg-alt);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.office-empty.is-hero > b {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.office-empty-lede {
+  max-width: 48ch;
+  color: var(--text-muted);
+  font-size: var(--op-fs-sm);
+  line-height: 1.65;
+}
+
+.office-empty-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+}
+
+.office-empty-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: var(--op-fs-sm);
+  line-height: 1.55;
+}
+
+.office-empty-steps b {
+  flex-shrink: 0;
+  color: var(--gold);
+  font-size: var(--op-fs-xs);
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.office-empty.is-hero .btn-primary { align-self: flex-start; }
+
+/* ── 交办输入行 ────────────────────────────────── */
+.office-composer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: var(--op-pad);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-alt);
+}
+
+.office-composer-to {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--op-fs-sm);
+}
+
+.office-composer-label {
+  color: var(--text-muted);
+  letter-spacing: var(--label-tracking, 0.08em);
+  text-transform: uppercase;
+  font-size: var(--op-fs-xs);
+}
+
+.office-input,
+.office-textarea,
+.office-select,
+.office-to-select,
+.office-say {
+  font: inherit;
+  font-size: var(--op-fs-md);
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 5px 7px;
+  min-width: 0;
+}
+
+.office-say {
+  padding: 7px 8px;
+  resize: vertical;
+  min-height: 52px;
+  line-height: 1.5;
+}
+
+.office-textarea {
+  min-height: 60px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.office-input:focus-visible,
+.office-textarea:focus-visible,
+.office-select:focus-visible,
+.office-to-select:focus-visible,
+.office-say:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.office-input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  padding: 0;
+}
+
+.office-input[type="range"] {
+  padding: 0;
+  background: none;
+  border: none;
+  accent-color: var(--accent);
+}
+
+.office-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.office-composer-hint {
+  margin-right: auto;
+  align-self: center;
+  color: var(--text-faint);
+  font-size: var(--op-fs-xs);
+  letter-spacing: 0.04em;
+}
+
+/* 办公室里的两种按钮：次要＝发丝框，主要＝墨底（与发送键共用 --accent-bg / --accent-fg）。
+   这两颗以前只有 class 没有规则，招聘、交办与拍板那一排都裸着。 */
+.btn-mini,
+.btn-primary {
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--op-fs-sm);
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--transition), background-color var(--transition),
+    color var(--transition), opacity var(--transition);
+}
+
+.btn-mini:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card);
+}
+
+.btn-primary {
+  border-color: var(--accent-bg);
+  background: var(--accent-bg);
+  color: var(--accent-fg);
+}
+
+.btn-primary:hover { opacity: 0.86; }
+
+.btn-mini:disabled,
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-mini:focus-visible,
+.btn-primary:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* ── 右栏：动态 / 等你拍板 / 值班表 / 岗位 ──────── */
+.office-side {
+  width: var(--op-side);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.office-side-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  padding: 0 var(--op-pad);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.office-side-tabs::-webkit-scrollbar { display: none; }
+
+.office-side-tab {
+  font: inherit;
+  font-size: var(--op-fs-md);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 10px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.office-side-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.office-side-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* 页签上的挂账数：空着就不占位，省得"0"看着像一条待办 */
+.office-tab-count {
+  font-style: normal;
+  margin-left: 4px;
+  font-size: var(--op-fs-xs);
+  color: var(--danger);
+  font-variant-numeric: tabular-nums;
+}
+
+.office-side-pane {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.office-side-pane.active {
+  display: block;
+}
+
+/* 动态流：一行一句话，正文行宽收到可读范围 */
+.office-feed {
+  display: flex;
+  flex-direction: column;
+  padding: var(--op-gap) var(--op-pad);
+  gap: var(--op-gap);
+}
+
+.office-msg {
+  border-left: 2px solid var(--border-hover);
+  padding-left: 8px;
+  max-width: var(--op-measure);
+}
+
+.office-msg[data-from="employee"] {
+  border-left-color: var(--accent);
+}
+
+.office-msg[data-from="user"] {
+  border-left-color: var(--text-muted);
+}
+
+.office-msg-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.office-msg-who {
+  color: var(--text);
+  font-size: var(--op-fs-sm);
+}
+
+.office-msg-body {
+  font-size: var(--op-fs-md);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 2px;
+}
+
+.office-msg-body.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.office-msg-body:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.office-msg-link {
+  font-size: var(--op-fs-xs);
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 2px;
+  align-self: flex-start;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
+/* 等你拍板：卡住与「不该办」都停在这里，一条一张卡 */
+.office-pending {
+  display: flex;
+  flex-direction: column;
+  gap: var(--op-gap);
+  padding: var(--op-gap) var(--op-pad) var(--op-pad-lg);
+}
+
+.office-pending-item {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--danger);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: var(--op-measure);
+}
+
+/* 判「不该办」的那一张用红墨底标出来：它和"缺条件"要人做的决定不是一回事 */
+.office-pending-item[data-status="dropped"] {
+  background: var(--danger-dim);
+}
+
+.office-pending-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.office-pending-who {
+  color: var(--text);
+  font-size: var(--op-fs-sm);
+}
+
+.office-pending-kind {
+  color: var(--danger);
+  letter-spacing: var(--label-tracking, 0.08em);
+}
+
+.office-pending-when {
+  margin-left: auto;
+}
+
+.office-pending-brief {
+  font-size: var(--op-fs-md);
+  color: var(--text);
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.office-pending-why {
+  font-size: var(--op-fs-sm);
+  color: var(--text-muted);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+}
+
+.office-pending-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 2px;
+}
+
+/* 值班表：一条班一行 */
+.office-duties {
+  display: flex;
+  flex-direction: column;
+  gap: var(--op-gap);
+  padding: var(--op-gap) var(--op-pad);
+}
+
+.office-duty {
+  border: 1px solid var(--border);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.office-duty-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--op-fs-md);
+}
+
+.office-duty-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 晨会分诊那一条班的记号：它排出来的活是"排队列"，不是做某件具体的事 */
+.office-duty-flag {
+  color: var(--accent);
+  border: 1px solid var(--border-hover);
+  padding: 0 4px;
+  font-size: var(--op-fs-xs);
+}
+
+.office-duty-when {
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.office-duty-brief {
+  font-size: var(--op-fs-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 守卫条件：这一班不是到点就动，写清楚它在等什么 */
+.office-duty-guard {
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  border-left: 2px solid var(--border-hover);
+  padding-left: 6px;
+  word-break: break-word;
+}
+
+.office-duty-status {
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.office-duty-status[data-kind="error"] {
+  color: var(--danger);
+}
+
+.office-duty-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* 新增表单不在展示区那个容器里：快照每几秒刷一次，跟着刷会吃掉正在打的那句 */
+.office-duty-host {
+  padding: 0 var(--op-pad) var(--op-pad-lg);
+}
+
+.office-duty-new {
+  border: 1px dashed var(--border-hover);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.office-field-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--op-fs-sm);
+}
+
+.office-field-row > span:first-child {
+  width: 62px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.office-field-row > *:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.office-field-row .office-hint {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 岗位页 */
+.office-staff {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--op-gap) var(--op-pad) var(--op-pad-lg);
+}
+
+.office-staff-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.office-staff h4,
+.office-staff-form h4 {
+  margin: 0;
+  font-size: var(--op-fs-lg);
+  font-weight: 600;
+}
+
+.office-staff-form .office-textarea {
+  min-height: 96px;
+}
+
+/* 选中同事时，最近一趟交付就摊在岗位表最上面：从工位走到对话最顺的一条路 */
+.office-staff-recent {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0 9px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--op-fs-sm);
+}
+
+.office-staff-recent-label {
+  color: var(--text-muted);
+  font-size: var(--op-fs-xs);
+  letter-spacing: var(--label-tracking, 0.08em);
+  text-transform: uppercase;
+}
+
+.office-staff-recent-line {
+  min-width: 0;
+  color: var(--text);
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.office-staff-recent-go {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--op-fs-xs);
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.office-staff-recent-go:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.office-staff-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.office-template-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--op-gap);
+}
+
+.office-template {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--op-fs-sm);
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+
+.office-template:hover {
+  border-color: var(--accent);
+}
+
+.office-template:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.office-hint {
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* 他自己记的事（岗位页底部那块清单）：只跟着快照补画，不碰正在填的那几格 */
+.office-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.office-notes h5 {
+  margin: 0 0 2px;
+  font-size: var(--op-fs-sm);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking, 0.08em);
+  color: var(--text-muted);
+}
+
+.office-note {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--op-fs-sm);
+  line-height: 1.45;
+}
+
+.office-note-tag {
+  flex-shrink: 0;
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 0 4px;
+}
+
+/* 未闭环是要接着办的，红墨那一侧；卡住等人给条件，同理 */
+.office-note[data-kind="open"] .office-note-tag {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+.office-note[data-kind="blocked"] .office-note-tag {
+  color: var(--accent);
+  border-color: var(--border-hover);
+}
+
+.office-note-text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  color: var(--text);
+}
+
+.office-note-when {
+  flex-shrink: 0;
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 站会与绩效：两块只读卡，跟着快照画完，面板自己一个请求都不发 ── */
+.office-report {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.office-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+
+.office-card h5 {
+  margin: 0 0 2px;
+  font-size: var(--op-fs-sm);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking, 0.08em);
+  color: var(--text-muted);
+}
+
+.office-standup-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--op-fs-sm);
+  line-height: 1.45;
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+}
+
+.office-standup-who {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.office-standup-line {
+  min-width: 0;
+  word-break: break-word;
+  color: var(--text-muted);
+}
+
+.office-standup-when {
+  font-size: var(--op-fs-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.office-perf-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: var(--op-fs-sm);
+  line-height: 1.45;
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+}
+
+.office-perf-who {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.office-perf-cells {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 预算已满与被人打回，都站在红墨那一侧：这两个数要的是「这里得有人看一眼」 */
+.office-perf-cap,
+.office-desk-cap,
+.office-desk-back {
+  color: var(--danger);
+}
+
+/* 待审校既不是办完也不是等人拍板，用强调色单独一档 */
+.office-desk-review {
+  color: var(--accent);
+}
+
+/* ── 窄面板：三栏收两栏，动态并到下面 ────────── */
+@container office (max-width: 900px) {
+  /* 窄档先把右栏并到下面：整块可以纵向滚，工位列保底高度——
+     否则三块都想抢同一屏，工位会被压成 0 高，桌上一个人都看不见。 */
+  .office-layout {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    overflow-y: auto;
+  }
+
+  .office-side {
+    width: 100%;
+    border-top: 1px solid var(--border);
+    max-height: none;
+  }
+
+  .office-roster {
+    width: clamp(160px, 26cqi, 200px);
+  }
+
+  .office-floor-col {
+    flex: 1 1 320px;
+    min-height: 360px;
+  }
+
+  .office-floor {
+    --op-desk: 150px;
+  }
+
+  .office-masthead-live {
+    gap: 10px;
+  }
+
+  .office-masthead-live > span + span {
+    padding-left: 10px;
+  }
+}
+
+@container office (max-width: 620px) {
+  .office-masthead {
+    gap: 8px;
+    padding: 0 8px;
+  }
+
+  .office-masthead-sub,
+  .office-masthead-live {
+    display: none;
+  }
+
+  .office-masthead-name {
+    letter-spacing: 0.08em;
+  }
+
+  .office-masthead-actions {
+    margin-left: auto;
+    gap: 6px;
+  }
+
+  .office-view-switch {
+    min-width: 118px;
+  }
+
+  .office-view-tab {
+    padding: 5px 8px;
+  }
+
+  .office-pending-pill > span:first-child {
+    display: none;
+  }
+
+  .office-roster {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    max-height: 190px;
+  }
+
+  .office-floor-col {
+    border-right: none;
+  }
+
+  .office-template-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .office-bubble {
+    animation: none;
+  }
+
+  .office-bubble.is-out {
+    transition: none;
+  }
+
+  .office-view.active {
+    animation: none;
+  }
+
+  .office-view-thumb {
+    transition: none;
+  }
+}

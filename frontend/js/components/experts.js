@@ -3,14 +3,14 @@
  * 对话模式通过 #expert-select 注入；团队模式通过成员 expertId 注入
  */
 
-import { state, setActiveExpertId } from "../store.js?v=20261017-001";
+import { state, setActiveExpertId } from "../store.js?v=20261024-001";
 import {
   loadExperts, getExpert, createExpert, saveExpert, deleteExpert,
   importExpertZip, expertExportUrl, uploadExpertFile, deleteExpertFile,
-} from "../services/experts.js?v=20261017-001";
-import { dlgConfirm } from "../services/dialog.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { setExtCount } from "./extensions.js?v=20261017-001";
+} from "../services/experts.js?v=20261024-001";
+import { dlgConfirm } from "../services/dialog.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { setExtCount } from "./extensions.js?v=20261024-001";
 
 let modal, expertListEl, extListEl, detailEmpty, detailForm;
 let nameInput, descInput, personaInput, rulesInput;
@@ -27,7 +27,7 @@ function fmtSize(n) {
 
 async function toast(msg) {
   try {
-    const { toast: showToast } = await import("../app.js?v=20261017-001");
+    const { toast: showToast } = await import("../app.js?v=20261024-001");
     showToast(msg);
   } catch {
     console.warn(msg);

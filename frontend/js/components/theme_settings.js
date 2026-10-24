@@ -5,16 +5,16 @@
  * app.js 那一份订阅调 applyCustomTheme 注入样式。这里不再自己调 apply——
  * 两处各注入一次会打架，还会让"改了什么"和"页面上看到什么"对不上。
  */
-import { state, setCustomTheme } from "../store.js?v=20261017-001";
+import { state, setCustomTheme } from "../store.js?v=20261024-001";
 import {
   THEME_FONTS_MAIN, THEME_FONTS_CODE, THEME_PRESETS, MAX_FONT_BYTES,
   uploadBackground, removeBackground, probeBackground,
   probeWallpaperEngine, pullWallpaperEngineBackground,
   uploadFont, removeFont, probeFonts,
-} from "../services/theme_custom.js?v=20261017-001";
-import { dlgToast } from "../services/dialog.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { reportError } from "../services/error_sink.js?v=20261017-001";
+} from "../services/theme_custom.js?v=20261024-001";
+import { dlgToast } from "../services/dialog.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { reportError } from "../services/error_sink.js?v=20261024-001";
 
 // 背景图上限与后端 theme.py 的 MAX_BACKGROUND_BYTES 同一个数
 const MAX_BG_BYTES = 4 * 1024 * 1024;

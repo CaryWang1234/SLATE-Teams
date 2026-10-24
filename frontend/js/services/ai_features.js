@@ -11,8 +11,8 @@
  * mode 只是给人看的标签：自动 = 后台自己会发请求，手动 = 你点一下才发，模型调用 = 由模型自己决定调不调。
  */
 
-import { state, getModelKey, savePersistent, notify } from "../store.js?v=20261017-001";
-import { t } from "./i18n.js?v=20261017-001";
+import { state, getModelKey, savePersistent, notify } from "../store.js?v=20261024-001";
+import { t } from "./i18n.js?v=20261024-001";
 
 export const AI_FEATURES = [
   {
@@ -163,7 +163,7 @@ export function aiFeatureOffTip(id) {
  */
 export function aiFeatureBlocked(id) {
   if (isAiFeatureOn(id)) return false;
-  import("../app.js?v=20261017-001").then(({ toast }) => toast(aiFeatureOffTip(id))).catch(() => {});
+  import("../app.js?v=20261024-001").then(({ toast }) => toast(aiFeatureOffTip(id))).catch(() => {});
   return true;
 }
 

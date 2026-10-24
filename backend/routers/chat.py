@@ -32,6 +32,31 @@ BACKUP_DIR = DATA_DIR / "backups"
 # 所以窗口只能 ≥ 画布跨度，别为了「对齐」往小改——改小了最早那几天会静默消失。
 ACTIVITY_WINDOW_DAYS = 371
 
+# 备份覆盖的表（chat.py owns 那四张之外，议事与工具账本各归 events.py、办公室归 office.py 建表）。
+# 少一张就是「备份看着齐全、恢复后那一块全空」：
+#   team_sessions  名册快照与议事状态（重建一场讨论的行头）
+#   team_turns     发言全文（星图的边、"这场说过什么"的可追溯正文）
+#   team_attendees 与会票据（只存 token 的 sha256，导出也不泄原文）
+#   team_inbox     待代收的发言（与会者写、主持人页面读）
+#   runs / tool_events 工具账本（星图与「这一轮改了哪些文件」都从这份账里数）
+#   employees / employee_duties 员工名册与值班表（用户搭起来的东西，不是对话记录）
+#   office_jobs / office_messages 交付队列与工位传话
+#   daily_usage 按天 token 记账（少了它，恢复完会话齐全、活跃度热力图却是一片空白）
+TEAM_TABLES = ("team_sessions", "team_turns", "team_attendees", "team_inbox")
+LEDGER_TABLES = ("runs", "tool_events")
+# 「清空对话」那一下删的是记录：说过什么、做过什么。
+RECORD_TABLES = TEAM_TABLES + LEDGER_TABLES + ("office_jobs", "office_messages", "daily_usage")
+# 名册、值班表与员工自己的备忘只导出、不跟着清空：一个人说「清空对话」时
+# 不会以为自己在解雇员工、取消他的班、顺手抹掉他记得的未闭环事项。
+# 反过来说，新表不进这两份清单里的任意一份，守卫就红——必须当场表态它是记录还是配置。
+ROSTER_TABLES = ("employees", "employee_duties", "employee_notes")
+BACKUP_TABLES = RECORD_TABLES + ROSTER_TABLES
+# 代理主键不回传：同一笔发言在两台机器上是同一个 (session_id, seq)，
+# 照搬 id 会让备份里的那条撞上本地新写的行，被 INSERT OR IGNORE 静默吞掉。
+# team_inbox / office_messages 没有自然唯一键，只能靠 id 幂等——丢 id 的话
+# 同一份备份重放两遍就长出两条一样的待发，主持人代收时在黑板上画两句。
+DROP_SURROGATE_ID = {"team_turns": ("id",), "tool_events": ("id",)}
+
 
 def _get_db() -> sqlite3.Connection:
     """获取 SQLite 连接，自动建表。"""
@@ -132,6 +157,114 @@ def _get_db() -> sqlite3.Connection:
     
     conn.commit()
     return conn
+
+
+def _has_table(conn: sqlite3.Connection, table: str) -> bool:
+    """events.py 的表由各端点首次触达时惰性建表，没碰过团队功能的库里就没有这几张。"""
+    return conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (table,)
+    ).fetchone() is not None
+
+
+def _backup_rows(conn: sqlite3.Connection, table: str) -> list[dict[str, Any]]:
+    if not _has_table(conn, table):
+        return []
+    return [dict(r) for r in conn.execute(f"SELECT * FROM {table}").fetchall()]
+
+
+def _merge_backup_rows(conn: sqlite3.Connection, table: str, rows: Any,
+                       *, drop: tuple[str, ...] = ()) -> int:
+    """按主键/自然键合并备份里的一张表：已存在的整行跳过，不覆盖现有内容。
+
+    列名取自 PRAGMA 而不是备份文件——手改过的、或来自另一版本的 JSON，
+    多出来的键直接忽略，绝不拼进 SQL。
+    """
+    if not isinstance(rows, list) or not _has_table(conn, table):
+        return 0
+    cols = [str(r["name"]) for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+    added = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        names = [c for c in cols if c not in drop and c in row]
+        if not names:
+            continue
+        values: list[Any] = []
+        for c in names:
+            v = row[c]
+            # JSON 里塞进嵌套结构（列表/字典）时按文本存，别把整次导入炸成 500
+            values.append(v if v is None or isinstance(v, (str, int, float, bytes))
+                          else json.dumps(v, ensure_ascii=False))
+        placeholders = ", ".join("?" for _ in names)
+        cur = conn.execute(
+            f"INSERT OR IGNORE INTO {table} ({', '.join(names)}) VALUES ({placeholders})",
+            tuple(values),
+        )
+        added += max(cur.rowcount, 0)
+    return added
+
+
+def _ensure_backup_tables(conn: sqlite3.Connection) -> None:
+    """恢复前先把备份范围内的表全部建出来。
+
+    events.py / office.py 的表由各端点首次触达时惰性建，一台从没开过团队功能、
+    也从没招过员工的干净机器上 runs / tool_events / team_* / office_* 根本不存在。
+    少这一步，_merge_backup_rows 的存在性检查会把它们一律当"没数据"跳过——
+    恢复"成功"、条数报 0，历史整块静默丢失。
+    延迟导入：这两个模块都反向 import 了本模块的 _get_db，写在模块顶层会成环。
+    """
+    from backend.routers.events import _append_ledger_ddl, _team_ddl  # noqa: PLC0415
+    from backend.routers.office import _office_ddl  # noqa: PLC0415
+
+    _team_ddl(conn)
+    _append_ledger_ddl(conn)
+    _office_ddl(conn)
+
+
+def _sweep_orphans(conn: sqlite3.Connection) -> None:
+    """会话没了之后，挂在它下面的账本与归属引用要一起收干净。
+
+    留着不报错，只是星图与徽标永远查不到这些行，库里堆的都是看不见的垃圾；
+    team_sessions / office_jobs 的引用则清成空串——「要么指向还在的会话，要么为空」
+    是这两张表的口径，空引用本来就走得通（主持人的会话槽可以为空）。
+    先删 runs 再删事件：反过来的话，那条 NOT IN (SELECT run_id FROM runs) 在 runs 还在时
+    什么都删不掉，孤儿事件就永远留在库里了。
+    """
+    if _has_table(conn, "runs"):
+        conn.execute(
+            "DELETE FROM runs WHERE conversation_id <> '' "
+            "AND conversation_id NOT IN (SELECT id FROM conversations)"
+        )
+        if _has_table(conn, "tool_events"):
+            conn.execute("DELETE FROM tool_events WHERE run_id NOT IN (SELECT run_id FROM runs)")
+    if _has_table(conn, "team_sessions"):
+        conn.execute(
+            "UPDATE team_sessions SET conversation_id = '' WHERE conversation_id <> '' "
+            "AND conversation_id NOT IN (SELECT id FROM conversations)"
+        )
+    # 交付历史留着（那是「这台机器做过什么」），只有点不回会话的引用抹空
+    if _has_table(conn, "office_jobs"):
+        conn.execute(
+            "UPDATE office_jobs SET conversation_id = '' WHERE conversation_id <> '' "
+            "AND conversation_id NOT IN (SELECT id FROM conversations)"
+        )
+
+
+def clear_all_records(conn: sqlite3.Connection) -> dict[str, int]:
+    """清空这个库里的全部对话记录（会话 + 消息 + 议事 + 工具账本 + 交付队列）。
+
+    「存储 → 清空对话」那一项按整个 chat_history.db 报占用，只删两张表的话
+    释放出来的空间永远对不上那个数字，团队议事记录还会变成没有入口的孤儿——
+    后端没有单场删除端点，本地历史清掉之后再也看不见它们。
+    员工名册与值班表不在这一刀里（ROSTER_TABLES）：那是配置，不是对话记录。
+    """
+    cleared: dict[str, int] = {}
+    for table in ("messages", "conversations", *RECORD_TABLES):
+        if not _has_table(conn, table):
+            continue
+        cur = conn.execute(f"DELETE FROM {table}")
+        cleared[table] = max(cur.rowcount, 0)
+    return cleared
 
 
 def _name_fallbacks(project_id: str) -> list[str]:
@@ -470,6 +603,7 @@ async def delete_conversation(conv_id: str) -> dict[str, Any]:
     conn = _get_db()
     conn.execute("DELETE FROM messages WHERE conversation_id = ?", (conv_id,))
     conn.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
+    _sweep_orphans(conn)
     conn.commit()
     conn.close()
     return {"code": 0, "data": None, "message": "ok"}
@@ -508,7 +642,12 @@ async def rename_conversation(conv_id: str, body: dict[str, Any]) -> dict[str, A
 
 @router.post("/conversations/batch-delete")
 async def batch_delete_conversations(body: dict[str, Any]) -> dict[str, Any]:
-    """批量删除会话及其消息；clear_all 为真时清空全部会话。"""
+    """批量删除会话及其消息；clear_all 为真时清空全部会话。
+
+    范围只到会话这一层：团队议事记录是另一份账，侧栏这一下不该把它一起带走
+    （要连议事一起清是「设置 → 存储 → 清空对话」那条，它按整个库报占用）。
+    会话没了之后交给 _sweep_orphans 收尾，不留看不见的孤儿行。
+    """
     conn = _get_db()
     if body.get("clear_all"):
         cur = conn.execute("SELECT COUNT(*) FROM conversations").fetchone()
@@ -525,6 +664,7 @@ async def batch_delete_conversations(body: dict[str, Any]) -> dict[str, Any]:
             conn.execute("DELETE FROM messages WHERE conversation_id = ?", (conv_id,))
             cur = conn.execute("DELETE FROM conversations WHERE id = ?", (conv_id,))
             deleted += max(cur.rowcount, 0)
+    _sweep_orphans(conn)
     conn.commit()
     conn.close()
     return {"code": 0, "data": {"deleted": deleted}, "message": "ok"}
@@ -583,12 +723,13 @@ async def search_messages(q: str = "", limit: int = 30) -> dict[str, Any]:
 
 @router.get("/export")
 async def export_all() -> dict[str, Any]:
-    """导出全部对话、消息、记忆与提示词素材（数据备份用）。"""
+    """导出全部对话、消息、记忆、提示词素材，以及团队议事与工具账本（数据备份用）。"""
     conn = _get_db()
     conversations = [dict(r) for r in conn.execute("SELECT * FROM conversations").fetchall()]
     messages = [dict(r) for r in conn.execute("SELECT * FROM messages").fetchall()]
     memories = [dict(r) for r in conn.execute("SELECT * FROM memories").fetchall()]
     snippets = [dict(r) for r in conn.execute("SELECT * FROM prompt_snippets").fetchall()]
+    extra = {t: _backup_rows(conn, t) for t in BACKUP_TABLES}
     conn.close()
     return {
         "code": 0,
@@ -597,6 +738,7 @@ async def export_all() -> dict[str, Any]:
             "messages": messages,
             "memories": memories,
             "snippets": snippets,
+            **extra,
         },
         "message": "ok",
     }
@@ -611,6 +753,7 @@ async def import_all(body: dict[str, Any]) -> dict[str, Any]:
     memories = data.get("memories") or []
     snippets = data.get("snippets") or []
     conn = _get_db()
+    _ensure_backup_tables(conn)
     stats = {"conversations": 0, "messages": 0, "memories": 0, "snippets": 0}
     for c in conversations:
         if not c.get("id"):
@@ -664,6 +807,9 @@ async def import_all(body: dict[str, Any]) -> dict[str, Any]:
             (s["id"], s.get("text", ""), s.get("source", ""), s.get("created_at") or time.time()),
         )
         stats["snippets"] += cur.rowcount
+    for table in BACKUP_TABLES:
+        stats[table] = _merge_backup_rows(conn, table, data.get(table) or [],
+                                          drop=DROP_SURROGATE_ID.get(table, ()))
     conn.commit()
     conn.close()
     return {"code": 0, "data": stats, "message": "ok"}

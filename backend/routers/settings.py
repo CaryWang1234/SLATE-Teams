@@ -12,6 +12,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from backend.data_io import atomic_write_json
+from backend.routers.chat import clear_all_records
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -156,7 +157,7 @@ class CleanupRequest(BaseModel):
 
 @router.post("/storage/cleanup")
 async def storage_cleanup(req: CleanupRequest):
-    """清理指定目标：vacuum 压缩数据库 / history 清空全部对话 / webview 清理浏览器缓存。"""
+    """清理指定目标：vacuum 压缩数据库 / history 清空全部对话记录（含团队议事与工具账本）/ webview 清理浏览器缓存。"""
     db_path = DATA_DIR / "chat_history.db"
     freed = 0
     try:
@@ -177,8 +178,10 @@ async def storage_cleanup(req: CleanupRequest):
             before = sum(_path_size(p) for p in (db_path, DATA_DIR / "chat_history.db-wal", DATA_DIR / "chat_history.db-shm"))
             conn = sqlite3.connect(str(db_path), timeout=10.0, isolation_level=None)
             try:
-                conn.execute("DELETE FROM messages")
-                conn.execute("DELETE FROM conversations")
+                # 口径与 chat.py 同一份：这一项按整个 chat_history.db 报占用，
+                # 只删 messages/conversations 会让释放出来的空间永远对不上那个数字，
+                # 团队议事记录还删不掉（后端没有单场删除的端点）。
+                clear_all_records(conn)
                 conn.execute("VACUUM")
             finally:
                 conn.close()

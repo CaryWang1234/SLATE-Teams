@@ -2,8 +2,8 @@
  * SLATE API 调用封装：统一 fetch 拦截
  */
 
-import { API_BASE } from "../store.js?v=20261017-001";
-import { t } from "./i18n.js?v=20261017-001";
+import { API_BASE } from "../store.js?v=20261024-001";
+import { t } from "./i18n.js?v=20261024-001";
 
 // 思考内容标记前缀（用于在流式输出中区分 reasoning 与 content）
 export const REASONING_PREFIX = "\x00\x01R\x01\x00";

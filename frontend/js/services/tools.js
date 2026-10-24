@@ -12,18 +12,18 @@
  *   ◈◆◆
  */
 
-import { state, addBoardCard, setBoardCards, getConversationTodos, setConversationTodos, setActions, setHarnessEnabled, requestLoopExit, effectiveConstitution, permissionModeFor, MODE_TOOLS_NONE, MODE_READONLY_TOOLS, BUILTIN_MODES, addMode, updateMode, removeMode, modeById } from "../store.js?v=20261017-001";
-import { get, post, put, runSkillStream, REASONING_PREFIX, REASONING_INLINE_PREFIX } from "../services/api.js?v=20261017-001";
-import { guardSkillCall } from "./riskguard.js?v=20261017-001";
-import { isTruncatedUnexecutable } from "./agent_common.js?v=20261017-001";
-import { dlgUserAsk, dlgConfirm } from "./dialog.js?v=20261017-001";
-import { t } from "./i18n.js?v=20261017-001";
-import { makeId } from "./utils.js?v=20261017-001";
-import { runSubAgents, getSubAgentSignal, SUBAGENT_MAX_PARALLEL, SUBAGENT_OUTPUT_LIMIT } from "./subagent.js?v=20261017-001";
-import { startSubAgentJob, BG_SUBAGENT_MAX_JOBS } from "./subagent_jobs.js?v=20261017-001";
-import { noteBgTaskStarted } from "./bg_tasks.js?v=20261017-001";
-import { isAiToolOff } from "./ai_features.js?v=20261017-001";
-import { projectScopeOf, catalogForScope, forgetScopeCatalog } from "./project_scope.js?v=20261017-001";
+import { state, addBoardCard, setBoardCards, getConversationTodos, setConversationTodos, setActions, setHarnessEnabled, requestLoopExit, effectiveConstitution, permissionModeFor, MODE_TOOLS_NONE, MODE_READONLY_TOOLS, BUILTIN_MODES, addMode, updateMode, removeMode, modeById } from "../store.js?v=20261024-001";
+import { get, post, put, runSkillStream, REASONING_PREFIX, REASONING_INLINE_PREFIX } from "../services/api.js?v=20261024-001";
+import { guardSkillCall } from "./riskguard.js?v=20261024-001";
+import { isTruncatedUnexecutable } from "./agent_common.js?v=20261024-001";
+import { dlgUserAsk, dlgConfirm } from "./dialog.js?v=20261024-001";
+import { t } from "./i18n.js?v=20261024-001";
+import { makeId } from "./utils.js?v=20261024-001";
+import { runSubAgents, getSubAgentSignal, SUBAGENT_MAX_PARALLEL, SUBAGENT_OUTPUT_LIMIT } from "./subagent.js?v=20261024-001";
+import { startSubAgentJob, BG_SUBAGENT_MAX_JOBS } from "./subagent_jobs.js?v=20261024-001";
+import { noteBgTaskStarted } from "./bg_tasks.js?v=20261024-001";
+import { isAiToolOff } from "./ai_features.js?v=20261024-001";
+import { projectScopeOf, catalogForScope, forgetScopeCatalog } from "./project_scope.js?v=20261024-001";
 
 // 一次工具调用的"项目视野"：并行时后台那一场带着它自己的项目进来（ctx.project），
 // 没有 ctx 的旧调用点照旧读 state.project。这条是 P2 的串台防线——少了它，
@@ -178,6 +178,16 @@ function describeModeTools(tools) {
   if (tools === MODE_TOOLS_NONE) return "不调用工具（单轮直答）";
   if (Array.isArray(tools)) return `只读/白名单工具（${tools.length} 个）`;
   return "全部工具";
+}
+
+/**
+ * 办公室身份：只有引擎跑员工那一趟时才带进来（services/office.js 造的那份 record）。
+ * 用户在输入框那一侧叫到这几个工具时它是空的——必须当场拒，否则用户在对话里
+ * 就能替某位员工划备忘、判他的活不该办，那是替人做主。
+ */
+function officeRunActor(callCtx = {}) {
+  const actor = callCtx && callCtx.actor;
+  return actor && actor.kind === "office" && actor.employeeId ? actor : null;
 }
 
 const TOOLS = {
@@ -395,6 +405,141 @@ const TOOLS = {
       const count = state.boardCards.length;
       setBoardCards([]);
       return `已清空${count} 张卡片`;
+    },
+  },
+
+  office_send: {
+    name: "给同事递话",
+    description: "把一句话递进 SLATE 办公室。to 填同事的名字或工号（会作为一条新的活排到对方名下，不用等它回话），填 user 表示只说给用户听，填 broadcast 表示贴到办公室的动态流上。一次只递一件事：要办什么写清楚，不要贴过程，也不要连发多条。",
+    params: {
+      to: { type: "string", description: "接收方：同事的名字或工号 / user / broadcast", required: true },
+      text: { type: "string", description: "要说的一句话（结论或要办的事）", required: true },
+    },
+    async execute({ to, text }, callCtx = {}) {
+      const target = String(to || "").trim();
+      const body = String(text || "").trim();
+      if (!target || !body) return { error: "office_send 需要 to 与 text 两个参数都填上" };
+      const lowered = target.toLowerCase();
+      const toKind = lowered === "user" ? "user" : lowered === "broadcast" ? "broadcast" : "employee";
+      const actor = callCtx.actor && callCtx.actor.kind === "office" ? callCtx.actor : null;
+      const res = await post("/office/messages", {
+        fromKind: actor ? "employee" : "user",
+        fromId: actor?.employeeId || "",
+        fromName: actor?.employeeName || "",
+        toKind,
+        toId: toKind === "employee" ? target : "",
+        toName: toKind === "employee" ? target : "",
+        text: body,
+        jobId: actor?.jobId || "",
+        wake: toKind === "employee" ? 1 : 0,
+      });
+      if (res?.code !== 0) return { error: `递话没送出去：${res?.message || "后端拒绝"}` };
+      const d = res.data || {};
+      // 到转述上限时后端只记消息不排活：这一句必须回给模型，否则它会以为同事正在办
+      if (d.capped) return `已记录这句话，但${d.note || "不再自动唤起同事"}。请把这件事的结论直接写进你这次的交付里。`;
+      if (toKind === "employee") {
+        return `已递给 ${d.toName || target}（工号 ${d.toId}）：这一条会作为新的活排到对方名下，对方办完会在办公室留下结论。`;
+      }
+      return toKind === "user" ? "这句话已送给用户，显示在办公室的动态流上。" : "这句话已贴到办公室的动态流上。";
+    },
+  },
+
+  office_note: {
+    name: "给自己留备忘",
+    description: "办公室里的长期记忆，只有你下次开工时会读到。kind 三选一：open（还没办完的事）、ledger（一件事的结论）、blocked（缺什么条件）。这件事办完了，用 closeNoteId 把对应那条 open 划掉——不划掉，下次会照原样再办一遍。一次一条，text 写一句话就够。",
+    params: {
+      kind: { type: "string", description: "open / ledger / blocked", required: true },
+      text: { type: "string", description: "备忘内容（一句话）" },
+      ref: { type: "string", description: "涉及的文件、命令或值班（可留空）" },
+      closeNoteId: { type: "string", description: "要划掉的另一条备忘的 id（一般是办完的那条 open）" },
+    },
+    async execute({ kind, text, ref, closeNoteId }, callCtx = {}) {
+      const actor = officeRunActor(callCtx);
+      if (!actor) return { error: "备忘只给办公室里的员工记：这一趟不是员工在跑" };
+      const res = await post("/office/notes", {
+        employeeId: actor.employeeId,
+        jobId: actor.jobId || "",
+        kind: String(kind || "").trim(),
+        text: String(text || "").trim(),
+        ref: String(ref || "").trim(),
+        closeNoteId: String(closeNoteId || "").trim(),
+      });
+      if (res?.code !== 0) return { error: `备忘没记下：${res?.message || "后端拒绝"}` };
+      const d = res.data || {};
+      return `${d.noteId ? "已记下。" : ""}${d.closed ? `划掉了 ${d.closed} 条旧备忘。` : ""}`
+        + `还有 ${d.openCount} 条未闭环待办。`;
+    },
+  },
+
+  office_triage: {
+    name: "分诊自己手上的活",
+    description: "给队列里的活逐条拍顺序，每项形如 {jobId, action, why, priority, dueMs}：action 填 keep（该办；priority 0-9，越大越先领；dueMs 填要赶的毫秒时间戳，可留 0）、defer（暂缓，改到明天）、drop（判定这件事不该办，why 必填）。只能处置你自己名下的活；drop 不是删除，它停在「等你拍板」里，要人点头才回队列。",
+    params: {
+      decisions: { type: "array", description: "处置列表，每项 {jobId, action, why, priority, dueMs}", required: true },
+    },
+    async execute({ decisions }, callCtx = {}) {
+      const actor = officeRunActor(callCtx);
+      if (!actor) return { error: "分诊只由做这件事的员工本人下：这一趟不是员工在跑" };
+      let list = decisions;
+      if (typeof list === "string") {
+        try { list = JSON.parse(stripJsonFence(list)); } catch { list = null; }
+      }
+      if (!Array.isArray(list) || !list.length) return { error: "decisions 要是一个非空列表" };
+      const res = await post("/office/triage", {
+        employeeId: actor.employeeId, jobId: actor.jobId || "", decisions: list,
+      });
+      if (res?.code !== 0) return { error: `分诊没落库：${res?.message || "后端拒绝"}` };
+      const d = res.data || {};
+      const skipped = Array.isArray(d.skipped) && d.skipped.length ? `这些没进：${d.skipped.join("；")}。` : "";
+      return `分诊记下 ${d.applied || 0} 条。${skipped}判「不该办」的那些停在等人点头那一栏，不会自己回队列。`;
+    },
+  },
+
+  office_settle: {
+    name: "把这一趟结掉",
+    description: "办不下去、或不该由你办时，用它收尾，别只在正文里空口说。status 填 blocked（缺条件：reason 写缺什么，等人给）或 dropped（判定这件事不该办：reason 写为什么，等人点头才回队列）。正常交付不要调它——把结论写进最终回复就行。",
+    params: {
+      status: { type: "string", description: "blocked / dropped", required: true },
+      reason: { type: "string", description: "缺什么，或为什么不该办", required: true },
+    },
+    async execute({ status, reason }, callCtx = {}) {
+      const actor = officeRunActor(callCtx);
+      if (!actor) return { error: "这一趟不是员工在跑，没法替员工结班" };
+      const kind = String(status || "").trim();
+      if (kind !== "blocked" && kind !== "dropped") return { error: "office_settle 只认 blocked 或 dropped" };
+      const why = String(reason || "").trim();
+      if (!why) return { error: "要把缺什么 / 为什么不该办写出来" };
+      // 终态由引擎在这一趟结束时交回后端：工具只在这份身份对象上留个记号（同一个引用），
+      // 让页面自己 POST finish 会多出第二条收口通路，两处写同一行迟早分叉。
+      actor.settled = { status: kind, reason: why.slice(0, 600) };
+      return kind === "blocked"
+        ? `这一趟记为卡在：${why}。等人给条件后放回队列。`
+        : `这条已判为不该办：${why}。它停在「等你拍板」，要人点头才回队列。`;
+    },
+  },
+
+  office_review: {
+    name: "判这一份交付",
+    description: "审校那一趟的收口，一次只判一份。verdict 填 approve（合格：这份交付第一次递到用户手上）或 return（不合格：退回经办人重做）；note 必填——approve 写清你核过什么，return 写清要他改哪里。只能判排给你的那一条；不要替他重写交付，那不是这道门的职责。",
+    params: {
+      verdict: { type: "string", description: "approve / return", required: true },
+      note: { type: "string", description: "核过什么，或要他改哪里", required: true },
+    },
+    async execute({ verdict, note }, callCtx = {}) {
+      const actor = officeRunActor(callCtx);
+      if (!actor) return { error: "这一趟不是员工在跑，判不了别人的交付" };
+      const kind = String(verdict || "").trim();
+      if (kind !== "approve" && kind !== "return") return { error: "office_review 只认 approve 或 return" };
+      const noteText = String(note || "").trim();
+      if (!noteText) return { error: "审校要写一句话：核过什么，或要他改哪里" };
+      const res = await post(`/office/jobs/${encodeURIComponent(actor.jobId || "")}/review`, {
+        employeeId: actor.employeeId, verdict: kind, note: noteText,
+      });
+      if (res?.code !== 0) return { error: `审校没落库：${res?.message || "后端拒绝"}` };
+      const d = res.data || {};
+      if (kind === "approve") return "判为合格，这份交付已递到用户手上。";
+      if (d.escalated) return "这条已来回到转述上限，不再退回经办人，停在「等你拍板」等人定夺。";
+      return `已退回经办人重做，第 ${d.hop || 1} 手。理由随消息带给他：${noteText.slice(0, 80)}`;
     },
   },
 
@@ -2040,6 +2185,9 @@ async function executeToolCalls(calls, ctx = {}) {
         // 归属项目：后台那一场要按它自己的项目落文件/开终端，
         // 不能拿「屏幕上那个」当根（callProject 读的就是这一项）。
         project: ctx.project || null,
+        // 办公室身份：员工跑的这一趟要能认出「发话人是哪一位」，
+        // office_send 据此记账，不让模型自己报名字（报名字会把话记到别人头上）
+        actor: ctx.actor || null,
         // 回复模式的工具白名单：只有输入框那条链路显式带 mode 进来，后台路径不带＝不限制
         mode: ctx.mode || null,
         onEvent: ctx.onEvent ? (env => ctx.onEvent(env, call, i)) : null,
@@ -2057,7 +2205,7 @@ async function executeToolCalls(calls, ctx = {}) {
 
 // ── 系统提示词工具段 ──────────────────────────
 
-function getToolsSystemPrompt({ minimal = false, compact = false, project = null, mode = null } = {}) {
+function getToolsSystemPrompt({ minimal = false, compact = false, project = null, mode = null, officeRun = false } = {}) {
   let s = "\n\n[可用工具]\n";
   s += "你拥有工具，可以直接操作用户的工作环境。有一条边界先说清楚：灾难级命令（清空根目录、格式化磁盘一类）由后端无条件硬拦，任何审批档位都不放行——撞到这类拒绝不要重试、不要换写法绕，直接告诉用户被拦与你的替代方案。\n\n";
   s += "**Agent 调用纪律**\n";
@@ -2141,7 +2289,11 @@ function getToolsSystemPrompt({ minimal = false, compact = false, project = null
   }
 
   if (compact || minimal) {
-    const extraNames = Object.keys(TOOLS).filter(key => !CORE_AGENT_TOOLS.includes(key) && !isAiToolOff(key) && modeAllowsTool(mode, key));
+    // office_* 只在办公室那一趟里教（services/office.js 的工作纪律逐条写了参数形状）：
+    // 输入框这一侧的 Agent 报出员工名字也记不进谁的账，列在目录里只是让每个请求都驮着三个用不上的名字。
+    const extraNames = Object.keys(TOOLS).filter(key => !CORE_AGENT_TOOLS.includes(key)
+      && !isAiToolOff(key) && modeAllowsTool(mode, key)
+      && (officeRun || !key.startsWith("office_")));
     if (extraNames.length) {
       s += `其他可用工具名：${extraNames.join(", ")}。不确定参数时优先使用 skill_run 调用内置技能或先读取相关上下文。\n\n`;
     }

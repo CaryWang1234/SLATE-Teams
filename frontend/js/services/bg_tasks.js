@@ -17,9 +17,9 @@
  * 没有归属信息的老事件一律就地念 —— 扣住一条真结局不发，比念错地方更糟。
  */
 
-import { get, post } from "./api.js?v=20261017-001";
-import { state, notify, recordTaskFlag, bgResumeUsedOf, markBgResumeUsed } from "../store.js?v=20261017-001";
-import { notifyTaskComplete } from "./notify.js?v=20261017-001";
+import { get, post } from "./api.js?v=20261024-001";
+import { state, notify, recordTaskFlag, bgResumeUsedOf, markBgResumeUsed } from "../store.js?v=20261024-001";
+import { notifyTaskComplete } from "./notify.js?v=20261024-001";
 
 /** 有任务在册时的轮询间隔：够及时，又不至于把 3 秒一次的请求灌满日志 */
 export const POLL_MS = 3000;
@@ -283,9 +283,9 @@ function announceFinished(tasks) {
     if (!t || t.state === "running" || announced.has(t.task_id)) continue;
     announced.add(t.task_id);
     const ok = t.state === "exited" && t.exit_code === 0;
-    // 团队讨论的话术由团队面板自己出（这一文件的循环变量就叫 t，把 t() 引进来会被静默遮蔽，
-    // 而且"后台任务已完成"这种标题本来就说不清那是一场辩论）；徽标照记。
-    if (t.family !== "team") {
+    // 团队讨论与员工交付的话术由各自的面板自己出（这一文件的循环变量就叫 t，把 t() 引进来会被静默遮蔽，
+    // 而且"后台任务已完成"这种标题本来就说不清那是一场辩论、那是一位员工的交付）；徽标照记。
+    if (t.family !== "team" && t.family !== "office") {
       const title = ok ? "后台任务已完成" : t.state === "stopped" ? "后台任务已停止" : "后台任务异常结束";
       const body = `${t.label || t.task_id}${t.exit_code === null || t.exit_code === undefined ? "" : `（exit ${t.exit_code}）`}`;
       try { notifyTaskComplete(title, body); } catch (e) { /* 通知不是关键路径 */ }

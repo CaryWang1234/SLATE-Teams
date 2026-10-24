@@ -6,12 +6,12 @@
  * 这一对键——存一份文件清单的副本，刷新一次就跟现场不一致了。
  */
 
-import { get, patch, post } from "../services/api.js?v=20261017-001";
-import { roundQuery } from "../services/tools.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { iconSvgEl } from "../services/icons.js?v=20261017-001";
-import { fileTypeIcon } from "../services/file_icons.js?v=20261017-001";
-import { dlgConfirm, dlgToast } from "../services/dialog.js?v=20261017-001";
+import { get, patch, post } from "../services/api.js?v=20261024-001";
+import { roundQuery } from "../services/tools.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { iconSvgEl } from "../services/icons.js?v=20261024-001";
+import { fileTypeIcon } from "../services/file_icons.js?v=20261024-001";
+import { dlgConfirm, dlgToast } from "../services/dialog.js?v=20261024-001";
 
 const VISIBLE_FILES = 3;    // 默认只铺前三行，其余收成「再显示 N 个文件」
 

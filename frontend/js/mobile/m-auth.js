@@ -4,10 +4,10 @@
  * 2. mHandleStructured：file_edit/file_create 的 diff 预览 → 接受/拒绝（file_append 调用时即写入）
  */
 
-import { state, getModelKey } from "../store.js?v=20261017-001";
-import { post } from "../services/api.js?v=20261017-001";
-import { aiModelFor, isAiFeatureOn } from "../services/ai_features.js?v=20261017-001";
-import { mShowRiskSheet, mShowDiffSheet, mToast, t } from "./m-ui.js?v=20261017-001";
+import { state, getModelKey } from "../store.js?v=20261024-001";
+import { post } from "../services/api.js?v=20261024-001";
+import { aiModelFor, isAiFeatureOn } from "../services/ai_features.js?v=20261024-001";
+import { mShowRiskSheet, mShowDiffSheet, mToast, t } from "./m-ui.js?v=20261024-001";
 
 /** 用当前模型解释命令目的（与桌面 explainCommand 同一逻辑，失败返回兜底文案） */
 async function mExplainCommand(command) {

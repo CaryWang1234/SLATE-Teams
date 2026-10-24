@@ -9,8 +9,8 @@
  * 还原时任何一项缺失就跳过那一项，绝不因为"上次没有会话"而报错或清空现有的东西。
  */
 
-import { state, notify } from "../store.js?v=20261017-001";
-import { getRegistry, patchRegistry, setActiveProject } from "./project.js?v=20261017-001";
+import { state, notify } from "../store.js?v=20261024-001";
+import { getRegistry, patchRegistry, setActiveProject } from "./project.js?v=20261024-001";
 
 const INPUT_SELECTOR = "#chat-input";
 
@@ -111,7 +111,7 @@ let chatApiPromise = null;
 
 function loadChatApi() {
   if (!chatApiPromise) {
-    chatApiPromise = import("../components/chat.js?v=20261017-001")
+    chatApiPromise = import("../components/chat.js?v=20261024-001")
       .then(mod => mod || null)
       .catch(() => null);
   }

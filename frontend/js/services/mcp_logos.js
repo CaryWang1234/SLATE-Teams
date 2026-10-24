@@ -8,7 +8,7 @@
  *
  * 图形本体在 mcp_icons.js（由 frontend/images/mcp/*.svg 生成），这里只有别名表。
  */
-import { MCP_ICON_LABELS } from "./mcp_icons.js?v=20261017-001";
+import { MCP_ICON_LABELS } from "./mcp_icons.js?v=20261024-001";
 
 /** 别名 → 图标键。别名一律小写；短别名（<5 字符）只做整词匹配。 */
 const ALIAS = {

@@ -9,8 +9,8 @@
  * 关掉自定义主题时这里会把整段样式和两个 data 属性一起摘掉，一个像素都不留——
  * 明暗切换（setTheme）在生效期间被 store.js 挡住，两套色不会同时说话。
  */
-import { API_BASE, IMPORTED_FONT_ID_RE } from "../store.js?v=20261017-001";
-import { get, post, del } from "./api.js?v=20261017-001";
+import { API_BASE, IMPORTED_FONT_ID_RE } from "../store.js?v=20261024-001";
+import { get, post, del } from "./api.js?v=20261024-001";
 
 const STYLE_ID = "slate-custom-theme";
 

@@ -3,10 +3,10 @@
  * 浏览 / 新增 / 编辑 / 删除（与桌面共享 /chat/memories 数据）
  */
 
-import { state, setMemories, addMemory, updateMemory, removeMemory } from "../store.js?v=20261017-001";
-import { get, post, patch, del } from "../services/api.js?v=20261017-001";
-import { t, mToast, mShowPrompt, mShowConfirm, mShowSheet, mIcon } from "./m-ui.js?v=20261017-001";
-import { onTab } from "./m-app.js?v=20261017-001";
+import { state, setMemories, addMemory, updateMemory, removeMemory } from "../store.js?v=20261024-001";
+import { get, post, patch, del } from "../services/api.js?v=20261024-001";
+import { t, mToast, mShowPrompt, mShowConfirm, mShowSheet, mIcon } from "./m-ui.js?v=20261024-001";
+import { onTab } from "./m-app.js?v=20261024-001";
 
 function $id(id) { return document.getElementById(id); }
 

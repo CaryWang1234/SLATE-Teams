@@ -2,48 +2,53 @@
  * SLATE 主控 v4：AI 团队、文件上传、上下文压缩
  */
 
-import { state, subscribe, setCurrentModel, setModelKey, getModelKey, hasModelKey, addCustomModel, updateCustomModel, removeCustomModel, setModelRegistry, loadPersistent, loadSharedPersistent, savePersistent, toggleTheme, customThemeActive, getContextCap, setModelContextCap, contextBudgetOf, declaredContextWindow, defaultContextCap, fmtContextTokens, contextCapStops, contextCapStopIndex, contextWindowSource, getContextWindow, setModelContextWindow, getModelDefinition, setTaskListSort, effectiveConstitution, constitutionScope, setConstitution, setBgAutoResume, setMaxParallelRuns, setMaxConcurrentRunsPerProject, setBackgroundRuns, setDefaultPermissionMode, setKeepAwakeOnNightRun } from "./store.js?v=20261017-001";
-import { initI18n, t } from "./services/i18n.js?v=20261017-001";
-import { iconSvgEl } from "./services/icons.js?v=20261017-001";
-import { modelIconKey, modelIconLabel } from "./services/model_logos.js?v=20261017-001";
-import { groupConversationsByProject, taskStatusOf, statusBadge, statusMark, STATUS, SORT_MODES, normalizeTaskListSort } from "./services/task_list.js?v=20261017-001";
-import { get, post, put } from "./services/api.js?v=20261017-001";
-import { dlgConfirm } from "./services/dialog.js?v=20261017-001";
-import { fmtTokens, tokenEquivalence } from "./services/usage.js?v=20261017-001";
-import { initChat, refreshConversationList, openConversation } from "./components/chat.js?v=20261017-001";
-import { initWhiteboard, refreshWhiteboard } from "./components/whiteboard.js?v=20261017-001";
-import { initPromptFactory } from "./components/prompt_factory.js?v=20261017-001";
-import { initSkillPanel, refreshSkills, refreshActions } from "./components/skill_panel.js?v=20261017-001";
-import { initExtensions } from "./components/extensions.js?v=20261017-001";
-import { initModePanel } from "./components/mode_panel.js?v=20261017-001";
-import { initMcpServerPanel } from "./components/mcp_server_panel.js?v=20261017-001";
-import { initTeamPanel } from "./components/team.js?v=20261017-001";
-import { initProjectBar } from "./components/project_bar.js?v=20261017-001";
-import { initSessionSummary } from "./components/session_summary.js?v=20261017-001";
-import { initApiTest, refreshApiTestModels } from "./components/api_test.js?v=20261017-001";
-import { initTypingGame } from "./components/typing_game.js?v=20261017-001";
-import { renderActivityHeatmap } from "./components/usage_heatmap.js?v=20261017-001";
-import { initMemoryPanel } from "./components/memory.js?v=20261017-001";
-import { initExpertsPanel } from "./components/experts.js?v=20261017-001";
-import { initSchedule } from "./components/schedule.js?v=20261017-001";
-import { initRiskGuard } from "./services/riskguard.js?v=20261017-001";
-import { initKeepAwake, keepAwakeStatus, isHoldingAwake, onKeepAwakeStatus } from "./services/keepawake.js?v=20261017-001";
-import { initAiFeatureSettings, renderAiFeatureSettings } from "./services/ai_features.js?v=20261017-001";
-import { initThemeSettings, renderThemeSettings } from "./components/theme_settings.js?v=20261017-001";
-import { initSessionArchiveSettings, renderArchivedSessions } from "./components/session_archive.js?v=20261017-001";
-import { applyCustomTheme } from "./services/theme_custom.js?v=20261017-001";
-import { initUnderstandPanel } from "./components/understand.js?v=20261017-001";
-import { getCurrentProject, browseFiles } from "./services/project.js?v=20261017-001";
-import { setProject, setProjectFileTree } from "./store.js?v=20261017-001";
-import { cxDockIn, cxPanelIn, cxHistReveal } from "./services/cx_motion.js?v=20261017-001";
-import { installErrorSink } from "./services/error_sink.js?v=20261017-001";
+import { state, subscribe, setCurrentModel, setModelKey, getModelKey, hasModelKey, addCustomModel, updateCustomModel, removeCustomModel, setModelRegistry, loadPersistent, loadSharedPersistent, savePersistent, toggleTheme, customThemeActive, getContextCap, setModelContextCap, contextBudgetOf, declaredContextWindow, defaultContextCap, fmtContextTokens, contextCapStops, contextCapStopIndex, contextWindowSource, getContextWindow, setModelContextWindow, getModelDefinition, setTaskListSort, effectiveConstitution, constitutionScope, setConstitution, setBgAutoResume, setMaxParallelRuns, setMaxConcurrentRunsPerProject, setBackgroundRuns, setDefaultPermissionMode, setKeepAwakeOnNightRun } from "./store.js?v=20261024-001";
+import { initI18n, t } from "./services/i18n.js?v=20261024-001";
+import { iconSvgEl } from "./services/icons.js?v=20261024-001";
+import { modelIconKey, modelIconLabel } from "./services/model_logos.js?v=20261024-001";
+import { groupConversationsByProject, taskStatusOf, statusBadge, statusMark, STATUS, SORT_MODES, normalizeTaskListSort } from "./services/task_list.js?v=20261024-001";
+import { get, post, put } from "./services/api.js?v=20261024-001";
+import { dlgConfirm } from "./services/dialog.js?v=20261024-001";
+import { fmtTokens, tokenEquivalence } from "./services/usage.js?v=20261024-001";
+import { initChat, refreshConversationList, openConversation } from "./components/chat.js?v=20261024-001";
+import { initWhiteboard, refreshWhiteboard } from "./components/whiteboard.js?v=20261024-001";
+import { initPromptFactory } from "./components/prompt_factory.js?v=20261024-001";
+import { initSkillPanel, refreshSkills, refreshActions } from "./components/skill_panel.js?v=20261024-001";
+import { initExtensions } from "./components/extensions.js?v=20261024-001";
+import { initModePanel } from "./components/mode_panel.js?v=20261024-001";
+import { initMcpServerPanel } from "./components/mcp_server_panel.js?v=20261024-001";
+import { initTeamPanel, TEAM_HISTORY_KEY } from "./components/team.js?v=20261024-001";
+import { initOfficePanel, refreshOfficePanel } from "./components/office.js?v=20261024-001";
+import { initOfficeEngine } from "./services/office.js?v=20261024-001";
+import { initProjectBar } from "./components/project_bar.js?v=20261024-001";
+import { initSessionSummary } from "./components/session_summary.js?v=20261024-001";
+import { initApiTest, refreshApiTestModels } from "./components/api_test.js?v=20261024-001";
+import { initTypingGame } from "./components/typing_game.js?v=20261024-001";
+import { renderActivityHeatmap } from "./components/usage_heatmap.js?v=20261024-001";
+import { initMemoryPanel } from "./components/memory.js?v=20261024-001";
+import { initExpertsPanel } from "./components/experts.js?v=20261024-001";
+import { initSchedule } from "./components/schedule.js?v=20261024-001";
+import { initRiskGuard } from "./services/riskguard.js?v=20261024-001";
+import { initKeepAwake, keepAwakeStatus, isHoldingAwake, onKeepAwakeStatus } from "./services/keepawake.js?v=20261024-001";
+import { initAiFeatureSettings, renderAiFeatureSettings } from "./services/ai_features.js?v=20261024-001";
+import { initThemeSettings, renderThemeSettings } from "./components/theme_settings.js?v=20261024-001";
+import { initSessionArchiveSettings, renderArchivedSessions } from "./components/session_archive.js?v=20261024-001";
+import { applyCustomTheme } from "./services/theme_custom.js?v=20261024-001";
+import { initUnderstandPanel } from "./components/understand.js?v=20261024-001";
+import { getCurrentProject, browseFiles } from "./services/project.js?v=20261024-001";
+import { setProject, setProjectFileTree } from "./store.js?v=20261024-001";
+import { cxDockIn, cxPanelIn, cxHistReveal } from "./services/cx_motion.js?v=20261024-001";
+import { installErrorSink } from "./services/error_sink.js?v=20261024-001";
 
 // 异常兜底最先装：启动期任何未捕获错误都要留下栈迹
 installErrorSink();
 
 // ── Toast 通知 ──────────────────────────────
 
-let activePanelName = "chat";
+let activePanelName = "office";
+// 「办公室」这一页有两面：对话是原来那个顶层页，工位是花名册与平面图。
+let officeView = "chat";
+const OFFICE_VIEWS = new Set(["chat", "desk"]);
 let prevUiMode = null;
 
 function toast(msg, duration = 2200) {
@@ -59,9 +64,32 @@ function toast(msg, duration = 2200) {
   }, duration);
 }
 
+/**
+ * 办公室两面的显隐只由这一处决定：按钮态、滑块位置、面板显隐一起换。
+ * 顶层页签始终停在「办公室」，切面不再走 switchPanel 的整页切换。
+ */
+function applyOfficeView(view) {
+  const next = OFFICE_VIEWS.has(view) ? view : "chat";
+  officeView = next;
+  document.getElementById("office-view-chat")?.classList.toggle("active", next === "chat");
+  document.getElementById("office-view-desk")?.classList.toggle("active", next === "desk");
+  document.querySelectorAll("[data-office-view]").forEach(btn => {
+    const on = btn.dataset.officeView === next;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-selected", on ? "true" : "false");
+    btn.tabIndex = on ? 0 : -1;
+  });
+  const thumb = document.getElementById("office-view-thumb");
+  if (thumb) thumb.dataset.view = next;
+}
+
 function switchPanel(panelName) {
+  // "chat" 不再是一张独立的面板：它是办公室里的一面，旧调用照旧可用。
+  const requested = panelName || "chat";
+  const targetName = requested === "chat" ? "office" : requested;
   const prevName = document.querySelector(".panel.active")?.id.replace("panel-", "") || null;
-  activePanelName = panelName || "chat";
+  activePanelName = targetName;
+  if (targetName === "office") applyOfficeView(requested === "chat" ? "chat" : "desk");
   document.querySelectorAll(".tab-btn").forEach(t => {
     t.classList.toggle("active", t.dataset.panel === activePanelName);
   });
@@ -71,6 +99,8 @@ function switchPanel(panelName) {
   if (activePanelName === "whiteboard") {
     requestAnimationFrame(() => refreshWhiteboard());
   }
+  // 办公室那一份快照按慢探刷新，切回这一屏要立刻看见实况，也让引擎马上试领一次活
+  if (activePanelName === "office") refreshOfficePanel();
   // 扩展页是"看手头有什么"的地方：进来就重取一次，别让用户对着上一个项目的清单挑
   if (activePanelName === "ext") {
     refreshSkills();
@@ -736,7 +766,7 @@ function openSettings(options = {}) {
     });
   } else if (options.focusLan) {
     requestAnimationFrame(() => {
-      document.getElementById("settings-lan")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollSettingsBlockIntoView(document.getElementById("settings-lan"));
     });
   }
 }
@@ -780,6 +810,31 @@ function settingsHaystack(el) {
   return normSettingsText(s);
 }
 
+/** 左栏跳转：滚到"顶边贴住容器顶"为止。
+ *
+ * 平滑滚动在途时，上方那些异步渲染的区块（模型清单、用量统计一类）还会把内容往下顶，
+ * 而 Chrome 不会重新瞄准——实测落点差 313px，停在了隔壁区块上：点「审批模式」看见的是「图片生成」。
+ * 所以每 100ms 量一次：滚动停住而顶边没贴住，就重新瞄一次，最多三次（真人在内容早就算完时
+ * 一次就到位，这个循环那时只会多跑一两拍）。
+ */
+function scrollSettingsBlockIntoView(el) {
+  const page = settingsPageEl || document.querySelector(".settings-page");
+  if (!page || !el) return;
+  const jump = () => el.scrollIntoView({ behavior: "smooth", block: "start" });
+  jump();
+  let last = page.scrollTop, still = 0, tries = 0;
+  const timer = window.setInterval(() => {
+    const now = page.scrollTop;
+    still = now === last ? still + 1 : 0;
+    last = now;
+    const off = el.getBoundingClientRect().top - page.getBoundingClientRect().top;
+    // 顶边贴上来了（scroll-margin-top 8px，容差留 12px）→ 收工
+    if (Math.abs(off) <= 12 || (still >= 3 && tries >= 2)) { window.clearInterval(timer); return; }
+    if (still >= 3) { tries += 1; still = 0; jump(); }
+  }, 100);
+  window.setTimeout(() => window.clearInterval(timer), 3000);
+}
+
 function renderSettingsNav() {
   const nav = document.getElementById("settings-nav");
   if (!nav) return;
@@ -792,7 +847,7 @@ function renderSettingsNav() {
     a.textContent = sec.title;
     a.title = sec.title;
     a.addEventListener("click", () => {
-      sec.el.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollSettingsBlockIntoView(sec.el);
     });
     nav.appendChild(a);
     sec.nav = a;
@@ -862,7 +917,7 @@ function initSettingsSearch() {
     e.preventDefault();
     const sec = firstTarget();
     if (!sec) return;
-    sec.el.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollSettingsBlockIntoView(sec.el);
     const hit = sec.el.querySelector(".settings-search-hit");
     const control = hit?.querySelector("input, select, textarea, button");
     control?.focus({ preventScroll: true });
@@ -1050,13 +1105,18 @@ function initBackupRestore() {
       if (res.code !== 0) throw new Error(res.message || "导出失败");
       let local = null;
       try { local = JSON.parse(localStorage.getItem("slate_state") || "null"); } catch {}
+      // 团队历史列表存在另一个键上：只带 slate_state 的话，换机恢复后后端有账、
+      // 面板的列表却空的（列表读的是本地那一份，正文才走后端重建）。
+      let teamHistory = null;
+      try { teamHistory = JSON.parse(localStorage.getItem(TEAM_HISTORY_KEY) || "null"); } catch {}
       const payload = {
         app: "SLATE Teams",
         kind: "full-backup",
-        version: 1,
+        version: 2,
         exportedAt: new Date().toISOString(),
         backend: res.data,
         local,
+        teamHistory,
       };
       let savedPath = "";
       try {
@@ -1076,7 +1136,11 @@ function initBackupRestore() {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       const d = res.data || {};
       if (statusEl) {
-        const base = t("已导出：{a} 会话 / {b} 条消息 / {c} 条记忆 / {d} 条素材", { a: d.conversations?.length || 0, b: d.messages?.length || 0, c: d.memories?.length || 0, d: d.snippets?.length || 0 });
+        const base = t("已导出：{a} 会话 / {b} 条消息 / {c} 条记忆 / {d} 条素材 / {e} 场议事 / {f} 条发言 / {g} 段账本 / {h} 位员工 / {i} 条交付", {
+          a: d.conversations?.length || 0, b: d.messages?.length || 0, c: d.memories?.length || 0, d: d.snippets?.length || 0,
+          e: d.team_sessions?.length || 0, f: d.team_turns?.length || 0, g: d.runs?.length || 0,
+          h: d.employees?.length || 0, i: d.office_jobs?.length || 0,
+        });
         statusEl.textContent = savedPath ? `${base}；本地备份：${savedPath}` : base;
       }
       toast(savedPath ? t("备份已下载，并已保存到本地 backups 目录") : t("备份已下载"));
@@ -1103,9 +1167,17 @@ function initBackupRestore() {
       if (payload.local && typeof payload.local === "object") {
         try { localStorage.setItem("slate_state", JSON.stringify(payload.local)); } catch {}
       }
+      // 团队历史列表随备份一起回来（议事正文恢复后由面板按 session id 向后端取）
+      if (Array.isArray(payload.teamHistory)) {
+        try { localStorage.setItem(TEAM_HISTORY_KEY, JSON.stringify(payload.teamHistory)); } catch {}
+      }
       const s = res.data || {};
       if (statusEl) {
-        statusEl.textContent = t("已导入：{a} 会话 / {b} 条消息 / {c} 条记忆 / {d} 条素材（已存在的跳过）", { a: s.conversations || 0, b: s.messages || 0, c: s.memories || 0, d: s.snippets || 0 });
+        statusEl.textContent = t("已导入：{a} 会话 / {b} 条消息 / {c} 条记忆 / {d} 条素材 / {e} 场议事 / {f} 条发言 / {h} 位员工 / {i} 条交付（已存在的跳过）", {
+          a: s.conversations || 0, b: s.messages || 0, c: s.memories || 0, d: s.snippets || 0,
+          e: s.team_sessions || 0, f: s.team_turns || 0,
+          h: s.employees || 0, i: s.office_jobs || 0,
+        });
       }
       toast(t("恢复完成，正在重载以应用本地设置…"));
       setTimeout(() => location.reload(), 1200);
@@ -1154,11 +1226,13 @@ async function runStorageCleanup(target, btn) {
     if (statusEl) statusEl.textContent = freed > 0 ? t("已释放 {size}", { size: fmtBytes(freed) }) : "无可释放空间（文件可能被占用，关闭应用后重试）";
     toast(freed > 0 ? t("已释放 {size}", { size: fmtBytes(freed) }) : t("清理完成"));
     if (target === "history") {
-      // 清空历史后同步侧栏列表
+      // 清空历史后同步侧栏列表。团队历史列表存在本地那一份上：后端那些行已经没了，
+      // 留着只会让面板列出点不开的死条目，所以一起清掉，重载让两边对上。
       try { await refreshConversationList(); } catch (e) {}
-
+      try { localStorage.removeItem(TEAM_HISTORY_KEY); } catch (e) {}
     }
     await renderStorageUsage();
+    if (target === "history") setTimeout(() => location.reload(), 800);
   } catch (e) {
     toast(t("清理失败: {msg}", { msg: e.message }));
   } finally {
@@ -1202,9 +1276,9 @@ async function renderStorageUsage() {
         const clearBtn = document.createElement("button");
         clearBtn.className = "send-btn send-btn-sm btn-danger";
         clearBtn.textContent = "清空对话";
-        clearBtn.title = "删除全部历史会话与消息";
+        clearBtn.title = "删除全部历史会话、消息与团队议事记录";
         clearBtn.addEventListener("click", async () => {
-          if (!await dlgConfirm("清空全部对话历史？此操作不可恢复，建议先在「数据备份」导出备份。", { danger: true, okText: "清空" })) return;
+          if (!await dlgConfirm(t("清空全部对话、团队议事与员工交付记录？这一项按整个对话数据库计算占用，议事正文、工具账本与工位传话一起清掉；员工名册与值班表不受影响。此操作不可恢复，建议先在「数据备份」导出备份。"), { danger: true, okText: "清空" })) return;
           await runStorageCleanup("history", clearBtn);
         });
         row.appendChild(clearBtn);
@@ -1464,7 +1538,7 @@ function applyNotificationSettings() {
   savePersistent();
   // 开启系统通知时自动请求权限
   if (state.notifications.systemNotifEnabled && "Notification" in window && Notification.permission === "default") {
-    import("./services/notify.js?v=20261017-001").then(({ requestNotificationPermission }) => {
+    import("./services/notify.js?v=20261024-001").then(({ requestNotificationPermission }) => {
       return requestNotificationPermission();
     }).then((perm) => {
       updateNotifPermissionHint();
@@ -1593,12 +1667,14 @@ const CX_ICON_CHAT = '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stro
 const CX_ICON_TEAM = '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
 const CX_ICON_BOARD = '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="7" y1="10" x2="17" y2="10"/></svg>';
 const CX_ICON_EXT = '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v6"/><path d="M12 16v6"/><path d="M2 12h6"/><path d="M16 12h6"/><circle cx="12" cy="12" r="4"/></svg>';
+const CX_ICON_OFFICE = '<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="11"/><path d="M3 15h18"/><path d="M7 15v5"/><path d="M17 15v5"/></svg>';
 
 const CODEX_DOCK_GROUPS = [
   {
     items: [
       { key: "chat", label: "对话", text: "对话", customIcon: CX_ICON_CHAT },
       { key: "team", label: "团队", text: "团队", customIcon: CX_ICON_TEAM },
+      { key: "office", label: "工位", text: "工位", customIcon: CX_ICON_OFFICE },
       { key: "whiteboard", label: "黑板", text: "黑板", customIcon: CX_ICON_BOARD },
       { key: "ext", label: "扩展", text: "扩展", customIcon: CX_ICON_EXT },
     ],
@@ -1644,6 +1720,9 @@ function handleCodexDock(key) {
       break;
     case "team":
       switchPanel("team");
+      break;
+    case "office":
+      switchPanel("office");
       break;
     case "whiteboard":
       switchPanel("whiteboard");
@@ -1749,7 +1828,7 @@ function updateDockActive() {
   if (!dock) return;
   const panelId = document.querySelector(".panel.active")?.id || "";
   let activeKey = "";
-  if (panelId === "panel-chat") activeKey = "chat";
+  if (panelId === "panel-office") activeKey = officeView === "chat" ? "chat" : "office";
   else if (panelId === "panel-team") activeKey = "team";
   else if (panelId === "panel-whiteboard") activeKey = "whiteboard";
   else if (panelId === "panel-ext") activeKey = "ext";
@@ -1924,7 +2003,7 @@ function buildCodexHistGroup(name, convs, ctx, meta = {}) {
     open.title = t("切到该项目");
     open.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const { switchToProject } = await import("./services/project_scene.js?v=20261017-001");
+      const { switchToProject } = await import("./services/project_scene.js?v=20261024-001");
       const out = await switchToProject(projectId);
       if (!out.ok) toast(out.reason || t("切换失败"));
       await refreshCodexHistory();
@@ -1939,8 +2018,8 @@ function buildCodexHistGroup(name, convs, ctx, meta = {}) {
     pin.setAttribute("aria-pressed", entry?.pinned ? "true" : "false");
     pin.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const { patchRegistry } = await import("./services/project.js?v=20261017-001");
-      const { refreshRegistry } = await import("./services/project_scene.js?v=20261017-001");
+      const { patchRegistry } = await import("./services/project.js?v=20261024-001");
+      const { refreshRegistry } = await import("./services/project_scene.js?v=20261024-001");
       await patchRegistry(projectId, { pinned: !(entry?.pinned) });
       await refreshRegistry();
       renderCodexHistory();
@@ -2040,6 +2119,8 @@ function initUiMode() {
   });
   window.addEventListener("slate:conv-active-changed", () => renderCodexHistory());
   applyUiMode();
+  applyOfficeView(officeView);
+  updateDockActive();
 }
 
 // ── 左栏三页签：项目 / 任务 / 总结（滑块切换）──────────────
@@ -2167,7 +2248,7 @@ async function saveSettings() {
     if (constData) {
       if (state.project) {
         // 打开着项目就写进项目（.slate/config.json，跟着仓库走），全局版本保持不动
-        const { updateProjectConfig } = await import("./services/project.js?v=20261017-001");
+        const { updateProjectConfig } = await import("./services/project.js?v=20261024-001");
         const config = { ...(state.project.config || {}), constitution: constData };
         const res = await updateProjectConfig(config);
         if (res.code === 0) setProject(res.data);
@@ -2192,6 +2273,41 @@ function initTabs() {
     if (tab.dataset.panel === "settings") openSettings();
     else switchPanel(tab.dataset.panel);
   }));
+}
+
+// 办公室两面的切换：点哪面走哪面；左右方向键按 tablist 的常规走法换面
+function initOfficeViews() {
+  document.querySelectorAll("[data-office-view]").forEach(btn => {
+    btn.addEventListener("click", () => switchPanel(btn.dataset.officeView === "chat" ? "chat" : "office"));
+  });
+  document.querySelector(".office-view-switch")?.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    switchPanel(officeView === "chat" ? "office" : "chat");
+    document.querySelector(`[data-office-view="${officeView}"]`)?.focus();
+  });
+}
+
+/**
+ * 办公室里的「去看这一场」不该把你甩到另一张桌子：由 app.js 统一接住，
+ * 先切回对话那一面再换会话。bg_task_panel 那类旧入口也能走同一条路。
+ */
+function initOfficeBridge() {
+  window.addEventListener("slate:office-view", (e) => {
+    switchPanel(e.detail?.view === "desk" ? "office" : "chat");
+  });
+  window.addEventListener("slate:open-conversation", async (e) => {
+    const detail = e.detail || {};
+    const id = String(detail.id || "");
+    if (!id) return;
+    const pid = String(detail.projectId || "");
+    if (pid && pid !== String(state.project?.project_id || "")) {
+      const { switchToProject } = await import("./services/project_scene.js?v=20261024-001");
+      await switchToProject(pid);
+    }
+    switchPanel("chat");
+    await openConversation(id);
+  });
 }
 
 // ── 键盘快捷键──────────────────────────────
@@ -2350,6 +2466,8 @@ async function init() {
 
 
   safeInit("标签页", initTabs);
+  safeInit("办公室视图", initOfficeViews);
+  safeInit("办公室桥接", initOfficeBridge);
   safeInit("对话", initChat);
   safeInit("黑板", initWhiteboard);
   safeInit("提示词工厂", initPromptFactory);
@@ -2359,6 +2477,9 @@ async function init() {
   safeInit("模式栏", initModePanel);
   safeInit("MCP Server", initMcpServerPanel);
   safeInit("AI 团队", initTeamPanel);
+  safeInit("办公室", initOfficePanel);
+  // 引擎不靠这一屏开着才转：值班的活到点要排得上队，页面停在哪一栏都一样
+  initOfficeEngine().catch(() => { /* 后端没起来：轮询自己会重试 */ });
   safeInit("项目栏", initProjectBar);
   safeInit("左栏页签", initLeftSidebar);
   safeInit("记忆面板", initMemoryPanel);
@@ -2435,11 +2556,11 @@ async function init() {
   // lastProjectPath 退成第二道：老数据第一次升级到带注册表的版本时，册子是空的，
   // 拿它补登一次，用户不会感到"项目不见了"。
   try {
-    const { refreshRegistry, restoreScene } = await import("./services/project_scene.js?v=20261017-001");
+    const { refreshRegistry, restoreScene } = await import("./services/project_scene.js?v=20261024-001");
     const res = await getCurrentProject();
     let project = res.code === 0 ? res.data : null;
     if (!project && state._lastProjectPath) {
-      const { openProject } = await import("./services/project.js?v=20261017-001");
+      const { openProject } = await import("./services/project.js?v=20261024-001");
       const openRes = await openProject(state._lastProjectPath);
       if (openRes.code === 0) project = openRes.data;
     }

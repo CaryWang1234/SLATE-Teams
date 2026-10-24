@@ -8,20 +8,20 @@
  * 历史仍在，只是这场讨论画不进星图（列表里标"仅本机记录"）。
  */
 
-import { state, subscribe, getModelKey, hasModelKey, estimateTokens, addBoardCard, getModelDefinition, permissionModeFor } from "../store.js?v=20261017-001";
-import { notifyTaskComplete } from "../services/notify.js?v=20261017-001";
-import { dlgChoice } from "../services/dialog.js?v=20261017-001";
-import { upsertLocalTask, pushLocalBgEvent, registerLocalTaskStopper } from "../services/bg_tasks.js?v=20261017-001";
-import { streamChat, post, get } from "../services/api.js?v=20261017-001";
-import { detectToolCalls, stripToolCalls, executeToolCalls, getToolsSystemPrompt } from "../services/tools.js?v=20261017-001";
-import { openRun as openLedgerRun } from "../services/agent_ledger.js?v=20261017-001";
-import { memberHue } from "../services/star_map.js?v=20261017-001";
-import { renderMarkdown } from "../services/markdown.js?v=20261017-001";
-import { loadWorkflows, getWorkflow, runWorkflow, stopWorkflow, saveRunToKnowledge } from "../services/workflow.js?v=20261017-001";
-import { getExpert, buildExpertPrompt } from "../services/experts.js?v=20261017-001";
-import { getExpertsCached } from "./experts.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { makeId } from "../services/utils.js?v=20261017-001";
+import { state, subscribe, getModelKey, hasModelKey, estimateTokens, addBoardCard, getModelDefinition, permissionModeFor } from "../store.js?v=20261024-001";
+import { notifyTaskComplete } from "../services/notify.js?v=20261024-001";
+import { dlgChoice } from "../services/dialog.js?v=20261024-001";
+import { upsertLocalTask, pushLocalBgEvent, registerLocalTaskStopper } from "../services/bg_tasks.js?v=20261024-001";
+import { streamChat, post, get } from "../services/api.js?v=20261024-001";
+import { detectToolCalls, stripToolCalls, executeToolCalls, getToolsSystemPrompt } from "../services/tools.js?v=20261024-001";
+import { openRun as openLedgerRun } from "../services/agent_ledger.js?v=20261024-001";
+import { memberHue } from "../services/star_map.js?v=20261024-001";
+import { renderMarkdown } from "../services/markdown.js?v=20261024-001";
+import { loadWorkflows, getWorkflow, runWorkflow, stopWorkflow, saveRunToKnowledge } from "../services/workflow.js?v=20261024-001";
+import { getExpert, buildExpertPrompt } from "../services/experts.js?v=20261024-001";
+import { getExpertsCached } from "./experts.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { makeId } from "../services/utils.js?v=20261024-001";
 
 // 当模型列表加载完成后，重新渲染团队成员（填充下拉选项）
 subscribe("modelRegistry", () => renderTeamMembers());
@@ -447,7 +447,12 @@ function createTeamRemote({ topic, members }) {
     createdAtMs: Date.now(),
     roster: teamRosterSnapshot(members),
     hostDeviceId: hostDeviceId(),
-    scopeProjectId: String(state.currentProjectId || ""),
+    // 归属项目在开场那一刻定下来：这一场在背后跑时，席位调的工具要按它自己的项目根
+    // 落文件/开终端，不能跟着屏幕上那一项跑（tools.js 的 callProject 读的就是 project 这一项）。
+    // state 上没有 currentProjectId 这个字段（只有 project / activeProjectId），
+    // 读错名字不会报错，只会永远写空串——落库的 scope_project_id 就成了死列。
+    project: state.project || null,
+    scopeProjectId: String(state.project?.project_id || ""),
     seq: 0,
     speakers: [],
     // ok=至少写成功过一次；failed=尝试过且全失败；null=还没试
@@ -1306,7 +1311,7 @@ async function awaitHumanTurn(seat, { ctx, signal }) {
  * 返回 { status: "done" | "skipped" | "error" | "aborted", action, target, text, full, runId }
  */
 async function speakForSeat(seat, opts) {
-  const { topic, boardContext, entries, round, isLastRound, expertDetail, signal, modelId, onBehalfOf, conversationId } = opts;
+  const { topic, boardContext, entries, round, isLastRound, expertDetail, signal, modelId, onBehalfOf, conversationId, project } = opts;
   const apiKey = getModelKey(modelId);
   if (!apiKey) {
     const why = t("未配置 API Key，已跳过");
@@ -1371,6 +1376,12 @@ async function speakForSeat(seat, opts) {
     const results = await executeToolCalls(toolCalls, {
       signal,
       ledger,
+      // 归属会话与归属项目必须跟着走：少了 convId，审批档会退回全局默认（这一场的夜间档
+      // 管不到它）；少了 project，项目类工具一律回「未打开项目」，席位写的文件会落到
+      // 屏幕上那一项的根下面。回复模式（工具白名单）这一路仍然不带＝不限制，
+      // 与 agent_loop.js 里那条注释同口径：席位的行为由 persona 管，不由输入框那一档管。
+      convId: conversationId || "",
+      project: project || null,
       callIdFor: (i) => ledger.callId(0, i),
       onCallStart: (call, i) => {
         const callId = ledger.callId(0, i);
@@ -1521,6 +1532,7 @@ async function startDiscussion() {
               topic, boardContext, entries, round, isLastRound, expertDetail: null,
               signal, modelId: proxyModel, onBehalfOf: member.id,
               conversationId: teamRemote.conversationId,
+              project: teamRemote.project,
             },
           );
           if (r.status === "aborted") break;
@@ -1556,6 +1568,7 @@ async function startDiscussion() {
         expertDetail: member.expertId ? expertDetails.get(member.expertId) : null,
         modelId: member.modelId,
         conversationId: teamRemote.conversationId,
+        project: teamRemote.project,
       });
       if (r.status === "aborted") break;
       if (r.status === "skipped" || r.status === "error") {
@@ -2336,4 +2349,4 @@ registerLocalTaskStopper(async (taskId) => {
   return true;
 });
 
-export { initTeamPanel, stopDiscussion };
+export { initTeamPanel, stopDiscussion, TEAM_HISTORY_KEY };

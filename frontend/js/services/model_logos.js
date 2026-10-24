@@ -13,7 +13,7 @@
  *
  * 图形本体在 model_icons.js（由 frontend/images/models/*.svg 生成），这里只有别名表。
  */
-import { MODEL_ICON_LABELS } from "./model_icons.js?v=20261017-001";
+import { MODEL_ICON_LABELS } from "./model_icons.js?v=20261024-001";
 
 /** 别名 → 图标键。别名一律小写；4 字符以下只做整词匹配，免得 glm / yi / hf 撞进别人的词里。 */
 const ALIAS = {

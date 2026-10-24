@@ -15,13 +15,13 @@
  * "切过去看"，不是"在这儿接着演"。
  */
 
-import { state, notify } from "../store.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { iconSvgEl } from "../services/icons.js?v=20261017-001";
-import { get } from "../services/api.js?v=20261017-001";
-import { switchToProject } from "../services/project_scene.js?v=20261017-001";
-import { bgTasks, stopBgTask, clearFinishedBgTasks, peekBgEvents, bgInbox, startBgPolling, refreshBgTasks } from "../services/bg_tasks.js?v=20261017-001";
-import { abortRun } from "../services/run_registry.js?v=20261017-001";
+import { state, notify } from "../store.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { iconSvgEl } from "../services/icons.js?v=20261024-001";
+import { get } from "../services/api.js?v=20261024-001";
+import { switchToProject } from "../services/project_scene.js?v=20261024-001";
+import { bgTasks, stopBgTask, clearFinishedBgTasks, peekBgEvents, bgInbox, startBgPolling, refreshBgTasks } from "../services/bg_tasks.js?v=20261024-001";
+import { abortRun } from "../services/run_registry.js?v=20261024-001";
 
 /** 展开的输出最多往回看多少行：面板是瞄一眼用的，不是完整日志阅读器 */
 const TAIL_LINES = 200;
@@ -184,7 +184,7 @@ function renderRunRow(run) {
       try {
         const pid = String(run.project_id || "");
         if (pid && pid !== String(state.project?.project_id || "")) await switchToProject(pid);
-        const { openConversation } = await import("./chat.js?v=20261017-001");
+        const { openConversation } = await import("./chat.js?v=20261024-001");
         await openConversation(run.conv_id);
       } finally {
         goBtn.disabled = false;
@@ -319,7 +319,7 @@ function renderRow(task) {
     teamBtn.addEventListener("click", async () => {
       teamBtn.disabled = true;
       try {
-        const { openTeamConversation } = await import("../app.js?v=20261017-001");
+        const { openTeamConversation } = await import("../app.js?v=20261024-001");
         openTeamConversation?.();
         const sid = teamBtn.dataset.sessionId;
         const item = [...document.querySelectorAll(".team-history-item")].find(el => el.dataset.sessionId === sid);
@@ -344,7 +344,7 @@ function renderRow(task) {
       try {
         const pid = String(task.project_id || "");
         if (pid && pid !== String(state.project?.project_id || "")) await switchToProject(pid);
-        const { openConversation } = await import("./chat.js?v=20261017-001");
+        const { openConversation } = await import("./chat.js?v=20261024-001");
         await openConversation(owner);
       } finally {
         goBtn.disabled = false;

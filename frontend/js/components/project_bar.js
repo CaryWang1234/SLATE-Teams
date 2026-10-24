@@ -2,17 +2,17 @@
  * SLATE 项目栏组件：打开/关闭项目、文件树浏览
  */
 
-import { state, subscribe, setProject, setProjectFileTree } from "../store.js?v=20261017-001";
+import { state, subscribe, setProject, setProjectFileTree } from "../store.js?v=20261024-001";
 import {
   openProject, closeProject, browseFiles, listDrives,
   createWorkspace, switchProjectRoot, editWorkspaceFolders,
   removeRegistry, patchRegistry,
-} from "../services/project.js?v=20261017-001";
-import { refreshRegistry, saveScene, switchToProject, restoreScene } from "../services/project_scene.js?v=20261017-001";
-import { fileTypeIcon, extToLang } from "../services/file_icons.js?v=20261017-001";
-import { iconSvgEl, setIconText } from "../services/icons.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { dlgConfirm, dlgPrompt, dlgToast } from "../services/dialog.js?v=20261017-001";
+} from "../services/project.js?v=20261024-001";
+import { refreshRegistry, saveScene, switchToProject, restoreScene } from "../services/project_scene.js?v=20261024-001";
+import { fileTypeIcon, extToLang } from "../services/file_icons.js?v=20261024-001";
+import { iconSvgEl, setIconText } from "../services/icons.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { dlgConfirm, dlgPrompt, dlgToast } from "../services/dialog.js?v=20261024-001";
 
 let projectBar, projectOpenModal, projectPathInput, projectDrivesList, projectSidebar;
 let workspaceNameInput, workspaceFoldersInput;
@@ -78,7 +78,7 @@ function renderProjectBar() {
     understandBtn.appendChild(iconSvgEl("book-open"));
     understandBtn.title = "Better Project Understanding：AI 扫描项目生成导览·百科与规则手册";
     understandBtn.addEventListener("click", () => {
-      import("./understand.js?v=20261017-001")
+      import("./understand.js?v=20261024-001")
         .then(({ openUnderstandModal }) => openUnderstandModal())
         .catch(() => {});
     });
@@ -89,7 +89,7 @@ function renderProjectBar() {
     reviewBtn.appendChild(iconSvgEl("search"));
     reviewBtn.title = "Code Review\uff1aAI \u4ee3\u7801\u5ba1\u67e5\uff08git diff \u00b7 \u56db\u7ef4\u5ea6 \u00b7 \u884c\u7ea7\u8bc4\u8bba\uff09";
     reviewBtn.addEventListener("click", () => {
-      import("./review.js?v=20261017-001")
+      import("./review.js?v=20261024-001")
         .then(({ openReviewModal }) => openReviewModal())
         .catch(() => {});
     });

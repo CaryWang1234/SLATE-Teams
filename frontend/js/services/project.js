@@ -8,7 +8,7 @@
  * 不带就是当前视野——老调用点一行不改也照旧。
  */
 
-import { get, post, put, patch, del } from "./api.js?v=20261017-001";
+import { get, post, put, patch, del } from "./api.js?v=20261024-001";
 
 async function openProject(path) {
   return post("/projects/open", { path });

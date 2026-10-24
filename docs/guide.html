@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SLATE Teams · 使用手册 | User Guide</title>
   <meta name="description" content="SLATE Teams 完整使用手册：从安装到高级功能，一页一页翻的簿式阅读。">
-  <link rel="icon" type="image/svg+xml" href="./mark.svg">
-  <link rel="alternate icon" type="image/png" href="./icon.png">
+  <link rel="icon" type="image/png" href="./icon.png">
   <style>
     /* ── 基础变量：与 docs/style.css 同一句方言（席 · Ledger） ──
        这一页不引官网那份样式（独立入口、少一个请求），所以令牌是抄来的；
@@ -334,14 +333,14 @@
   <!-- 导航 -->
   <nav class="guide-nav">
     <a class="guide-nav-brand" href="./index.html">
-      <img src="./mark.svg" alt="SLATE Teams">
+      <img src="./icon.png" alt="SLATE Teams">
       <span>SLATE Teams · <span class="lang-zh">使用手册</span><span class="lang-en">User Guide</span></span>
     </a>
     <div class="guide-nav-actions">
       <button class="nav-btn" id="btn-lang" onclick="toggleLang()">EN / 中</button>
       <button class="nav-btn" id="btn-theme" onclick="toggleTheme()">☀</button>
       <a class="nav-btn" href="./index.html"><span class="lang-zh">首页</span><span class="lang-en">Home</span></a>
-      <a class="nav-btn" href="https://docs.slate-ai.site/" target="_blank" rel="noopener"><span class="lang-zh">文档站</span><span class="lang-en">Docs</span></a>
+      <a class="nav-btn" href="https://docs.teams.slate-ai.site/" target="_blank" rel="noopener"><span class="lang-zh">文档站</span><span class="lang-en">Docs</span></a>
     </div>
   </nav>
 
@@ -484,6 +483,7 @@ python desktop.py</pre>
         <div class="chapter-body">
           <div class="lang-zh">
             <p>SLATE Teams 支持同时接入多个模型，在对话界面顶部下拉框随时切换。</p>
+            <div class="ink-note"><strong>对话在哪儿：</strong>顶栏不再单列「对话」——它和 AI 员工办公室合成一页「办公室」。进页默认是对话面；右上角切到「工位」是花名册、虚拟平面图与交办行，员工交付后的「去看这一场」会切回对话面并打开那一场。</div>
             <ul>
               <li>点击模型下拉框 → 添加/切换模型</li>
               <li>不同对话可使用不同模型</li>
@@ -499,6 +499,7 @@ python desktop.py</pre>
           </div>
           <div class="lang-en">
             <p>SLATE Teams supports multiple models simultaneously — switch anytime from the top dropdown.</p>
+            <div class="ink-note"><strong>Where chat lives:</strong> the top bar no longer has a separate Chat tab — it shares one Office page with the AI staff office. The page opens on Chat; switch to Desks (top right) for the roster, the virtual floor and the assignment bar, and a delivery's "Open this session" jumps back to Chat with that conversation loaded.</div>
             <ul>
               <li>Click model dropdown → Add/switch models</li>
               <li>Different conversations can use different models</li>
@@ -621,7 +622,7 @@ python desktop.py</pre>
               <li>输入问题 → 各成员按角色依次发表观点（最大轮数 3 / 5 / 8 / 10，默认 5 轮）</li>
               <li>决策者给出结论；勾着「决策需我拍板」时到这里停住，等你签字</li>
             </ol>
-            <p><strong>这一页怎么排：</strong>团队是与「对话」同级的顶层页签，点开是一张三栏会议桌——左栏<strong>在场</strong>（席位与这一场的来历：模型席位、真人席位、预设与历史场次）、中栏<strong>议事流</strong>（发言、轮次标尺与工作流）、右栏<strong>待你签字</strong>（把散在发言流与名册里的停点聚合成一份：等你签字、等谁开口、谁不在场；点一条滚到那一格并划一下，动作仍在那一格上做）。「决策需我拍板」也在右栏，因为它讲的是这一场的规矩。右栏是主持人的视图：手机那一页（局域网遥控 / 与会者页）只当得了与会者，当不了主持人。</p>
+            <p><strong>这一页怎么排：</strong>团队是与「办公室」同级的顶层页签，点开是一张三栏会议桌——左栏<strong>在场</strong>（席位与这一场的来历：模型席位、真人席位、预设与历史场次）、中栏<strong>议事流</strong>（发言、轮次标尺与工作流）、右栏<strong>待你签字</strong>（把散在发言流与名册里的停点聚合成一份：等你签字、等谁开口、谁不在场；点一条滚到那一格并划一下，动作仍在那一格上做）。「决策需我拍板」也在右栏，因为它讲的是这一场的规矩。右栏是主持人的视图：手机那一页（局域网遥控 / 与会者页）只当得了与会者，当不了主持人。</p>
             <p><strong>决策停点：</strong>「决策需我拍板」默认开着——采纳才算收口，选「继续讨论」则带着「未拍板」再辩一轮（重开有上限，不会一直烧 token）。夜间模式（全托管）不弹窗打断，但那一行照画并写明是自动采纳。</p>
             <p><strong>发言的账：</strong>某位成员这轮失败或没配 API Key，那一格标「失败」/「未参与」，不进下一位的上下文，也不算进发言数与星图。</p>
             <p><strong>背后跑：</strong>切回对话面板时辩论继续跑，待拍板与收口都进右栏任务中心那一张表（与后台终端任务、子代理批次同一族），点行上的按钮跳回这一场；手动停止的那场进历史并标「已中断」。</p>
@@ -636,7 +637,7 @@ python desktop.py</pre>
               <li>Enter question → Members speak in role order (max rounds 3 / 5 / 8 / 10, default 5)</li>
               <li>The decider concludes; with "Decision needs my sign-off" ticked it stops there and waits for you</li>
             </ol>
-            <p><strong>How the page is laid out:</strong> Team is a top-level tab next to Chat — a three-column meeting table. Left is <strong>Present</strong> (the seats and how this session came together: model seats, human seats, presets and past sessions), centre is the <strong>debate</strong> (speech, round rulers and workflows), right is <strong>Awaiting You</strong> (the stops scattered through the debate and the roster, gathered into one list: awaiting your sign-off, waiting for who, who is away; clicking an entry scrolls to that row and flashes it — the action still happens on that row). The "Decision needs my sign-off" switch lives in the right column too, because it is a rule of the session. That column is the host's view: the phone page (LAN remote / attendee page) can only be an attendee, never the host.</p>
+            <p><strong>How the page is laid out:</strong> Team is a top-level tab next to Office — a three-column meeting table. Left is <strong>Present</strong> (the seats and how this session came together: model seats, human seats, presets and past sessions), centre is the <strong>debate</strong> (speech, round rulers and workflows), right is <strong>Awaiting You</strong> (the stops scattered through the debate and the roster, gathered into one list: awaiting your sign-off, waiting for who, who is away; clicking an entry scrolls to that row and flashes it — the action still happens on that row). The "Decision needs my sign-off" switch lives in the right column too, because it is a rule of the session. That column is the host's view: the phone page (LAN remote / attendee page) can only be an attendee, never the host.</p>
             <p><strong>Decision sign-off:</strong> on by default — only approving closes the debate, choosing "keep discussing" re-opens it one more round marked "Not signed off" (re-opens are capped, so it can't burn tokens forever). Night mode never interrupts but still draws that row as auto-approved.</p>
             <p><strong>Speech accounting:</strong> if a member's request fails or has no API key, that row reads "Failed" / "Did not join" — it never enters the next member's context and never counts towards speech totals or the star map.</p>
             <p><strong>Running in the background:</strong> the debate continues while you are back on the chat panel; awaiting sign-off and the result land in the right-hand task list (same family as background terminal jobs and sub-agent batches), and the row's button jumps back to that session. A manually stopped debate stays in history labelled "Interrupted".</p>
@@ -963,6 +964,8 @@ python desktop.py</pre>
               <tr><td>上下文预算</td><td>模型行上「最大上下文」= 按该模型窗口生成的滑杆 + 精确数字框 + 「探测窗口」。自动档取该模型标称窗口 ×0.8、不吸附公共档位；本地/自定义端点可一键探测真实窗口、也可一键清除。同一个值同时决定自动压缩阈值与用量条分母</td>
               <tr><td>AI 辅助功能</td><td>对话以外的 15 项耗 Token 功能，逐项开关 + 单独选模型（含自动会话标题：新对话跑完首轮补一个短标题，只替换还是「首条消息前 30 字」那种占位标题）</td></tr>
               <tr><td>短回复审阅</td><td>模型回复后自动检查是否需要推进</td></tr>
+              <tr><td>数据备份与恢复</td><td>导出成一个 JSON：会话与消息、团队议事（每条发言的全文、席位名册快照、与会票据的哈希、待代收的发言）、工具账本（每一段 run 与它的事件）、按天 token 记账、记忆与素材，另加本地设置与团队历史列表。导入按键合并，已存在的跳过、不覆盖现有内容，同一份备份导两次也只落地一次；票据原文不在备份里（库里和导出里都只有它的 sha256）</td></tr>
+              <tr><td>存储空间</td><td>按文件报占用。「清空对话」删的是这个库里的全部对话记录——会话、消息、按天记账、团队议事与工具账本，确认框会把范围说明白；记忆与素材不在这一下的范围里。旁边那颗「压缩」跑 VACUUM，把已删除数据占的空间还给磁盘</td></tr>
             </table>
           </div>
           <div class="lang-en">
@@ -979,6 +982,8 @@ python desktop.py</pre>
               <tr><td>Context Budget</td><td>Per-model "max context" = a slider whose ticks come from that model's own window, an exact number box, and a probe-window button. Auto takes this model's nominal window × 0.8 with no snapping to shared ticks; local/custom endpoints can be probed for their real window and cleared with one click. The same value drives both the auto-compaction threshold and the usage-bar denominator</td>
               <tr><td>AI Assistance</td><td>15 token-spending features outside the chat loop, each with its own switch and model (including the auto session title: after a new conversation's first exchange the model proposes a short title, replacing only placeholder titles — the "first 30 characters of the opening message" kind)</td></tr>
               <tr><td>Short Reply Review</td><td>Auto-check if reply needs follow-up</td></tr>
+              <tr><td>Backup &amp; Restore</td><td>One JSON file: conversations and messages, team debates (every turn in full, the seat roster snapshot, attendee ticket hashes, unconsumed incoming remarks), the tool ledger (each run and its events), per-day token accounting, memories and snippets, plus local settings and the team history list. Import merges by key — rows that already exist are skipped, never overwritten, so the same backup can be replayed twice and lands once. Ticket tokens are never in the backup: both the database and the file carry only their sha256</td></tr>
+              <tr><td>Storage</td><td>Usage is reported per file. "Clear chats" removes every conversation record in that database — conversations, messages, per-day accounting, team debates and the tool ledger — and the confirmation spells that scope out; memories and snippets are not in it. The neighbouring Compact runs VACUUM and hands deleted space back to the disk</td></tr>
             </table>
           </div>
           <div class="lang-zh">
@@ -1135,7 +1140,7 @@ python desktop.py</pre>
           <a href="https://github.com/CaryWang1234/SLATE-Teams" target="_blank">GitHub</a> · 
           <a href="./index.html"><span class="lang-zh">首页</span><span class="lang-en">Home</span></a> · 
           <a href="https://github.com/CaryWang1234/SLATE-Teams/releases" target="_blank"><span class="lang-zh">下载</span><span class="lang-en">Download</span></a> · 
-          <a href="https://docs.slate-ai.site/" target="_blank" rel="noopener"><span class="lang-zh">文档站</span><span class="lang-en">Docs</span></a>
+          <a href="https://docs.teams.slate-ai.site/" target="_blank" rel="noopener"><span class="lang-zh">文档站</span><span class="lang-en">Docs</span></a>
         </p>
       </div>
 

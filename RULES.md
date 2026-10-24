@@ -169,7 +169,7 @@ SLATE-Teams/
 ## 8\. UI 规范
 
 * 视觉身份「席 · Ledger」，双主题按 `data-theme` 切换：浅色 `#F1F1EF` 石墨纸面 + `#191A1C` 墨字，深色 `#17181B` 墨底 + `#E4E4E6` 字。主强调色是账簿红墨 `#97342A`（浅）/ `#CC7466`（深），落在 `--accent` 与 `--gold` 上——`--gold` 只是原作留下的**名字**，值早已是红墨，不许再往里塞回金色。`--danger` 的报警红与它按深浅分工：红墨深而钝、报警红亮而饱和。
-* 字标是「席」+ 方角红墨 mark（`frontend/mark.svg` 兼作标签页图标），不用原作的圆砚位图。
+* 字标是「席」；顶栏那颗图标、标签页图标与官网的门面图都用 SLATE 的位图（`frontend/icon.png`，外框走 `--gold-dim` 淡底、直角）。纯 CSS 的两横条方角 mark 在 22px 下读起来是「二」，连同 `frontend/mark.svg` / `docs/mark.svg` 一起撤了，别再引回来；官网那份位图是同一文件的副本（守卫按逐字节比）。
 * 颜色一律用 CSS 变量（`--bg / --text / --border / --bg-alt / --gold` 等）；唯一例外：危险/错误色 `#c44`。
 * 直角或 ≤4px 圆角（`--radius`），无阴影、无渐变、无毛玻璃（自定义主题的「板块透明度」只是平面 alpha，不许加 `backdrop-filter` 模糊）；字体默认走系统回退，**不随包带字体文件**——用户在「设置 → 自定义主题」里自己导入的字体只落本机 `data/theme/fonts/`，经 `/api/theme/font/{id}` 供 `@font-face` 使用，不进仓库、不进安装包。
 * 新增样式追加到 `style.css` 对应功能区块后，命名沿用现有前缀（`team-\* / wf-\* / chat-\* / settings-\*` 等）。

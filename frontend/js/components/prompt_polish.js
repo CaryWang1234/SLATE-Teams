@@ -7,12 +7,12 @@
  * 草稿没被改过——覆盖掉用户刚写的字，比不优化糟得多。
  */
 
-import { state } from "../store.js?v=20261017-001";
-import { aiModelFor, aiFeatureBlocked } from "../services/ai_features.js?v=20261017-001";
-import { streamChat, REASONING_PREFIX, REASONING_INLINE_PREFIX } from "../services/api.js?v=20261017-001";
-import { dlgReview, dlgToast } from "../services/dialog.js?v=20261017-001";
-import { t } from "../services/i18n.js?v=20261017-001";
-import { reportError } from "../services/error_sink.js?v=20261017-001";
+import { state } from "../store.js?v=20261024-001";
+import { aiModelFor, aiFeatureBlocked } from "../services/ai_features.js?v=20261024-001";
+import { streamChat, REASONING_PREFIX, REASONING_INLINE_PREFIX } from "../services/api.js?v=20261024-001";
+import { dlgReview, dlgToast } from "../services/dialog.js?v=20261024-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { reportError } from "../services/error_sink.js?v=20261024-001";
 
 // 发给模型的话术是载荷，不进 i18n 字典（约定：t() 只包用户可见文本）
 function buildPolishPrompt(draft) {

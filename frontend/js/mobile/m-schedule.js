@@ -3,10 +3,10 @@
  * 列表 / 新建（名称、提示词、模型、模式、时间/间隔）/ 启用停用 / 立即运行 / 删除
  */
 
-import { state } from "../store.js?v=20261017-001";
-import { get, post, patch, del } from "../services/api.js?v=20261017-001";
-import { t, mToast, mShowPrompt, mShowConfirm, mShowSheet, mIcon } from "./m-ui.js?v=20261017-001";
-import { onTab } from "./m-app.js?v=20261017-001";
+import { state } from "../store.js?v=20261024-001";
+import { get, post, patch, del } from "../services/api.js?v=20261024-001";
+import { t, mToast, mShowPrompt, mShowConfirm, mShowSheet, mIcon } from "./m-ui.js?v=20261024-001";
+import { onTab } from "./m-app.js?v=20261024-001";
 
 function $id(id) { return document.getElementById(id); }
 

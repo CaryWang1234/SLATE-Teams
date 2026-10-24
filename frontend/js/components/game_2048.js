@@ -16,8 +16,8 @@
  * 不进后端设置项，免得为一局小游戏做三处联动。
  */
 
-import { t } from "../services/i18n.js?v=20261017-001";
-import { animateNumber, prefersReducedMotion } from "../services/anim.js?v=20261017-001";
+import { t } from "../services/i18n.js?v=20261024-001";
+import { animateNumber, prefersReducedMotion } from "../services/anim.js?v=20261024-001";
 
 const BEST_KEY = "slate_2048_best";
 const SIZE = 4;

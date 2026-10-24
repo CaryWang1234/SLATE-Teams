@@ -9,8 +9,8 @@
  * 注册表快照一起失效（换项目/删项目后重新取，不拿旧 path 去猜新项目）。
  */
 
-import { state } from "../store.js?v=20261017-001";
-import { get } from "./api.js?v=20261017-001";
+import { state } from "../store.js?v=20261024-001";
+import { get } from "./api.js?v=20261024-001";
 
 const cache = new Map();   // project_id -> info（含 project_id / path / name / constitution）
 

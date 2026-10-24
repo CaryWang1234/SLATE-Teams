@@ -9,7 +9,7 @@
  * team_turns 的写者唯一。所以这里发出去的话，会在轮到我那一席时被采纳。
  */
 
-import { t, initI18n } from "../services/i18n.js?v=20261017-001";
+import { t, initI18n } from "../services/i18n.js?v=20261024-001";
 
 const POLL_MS = 1500;
 const HEARTBEAT_MS = 10000;

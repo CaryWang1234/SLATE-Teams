@@ -3,10 +3,10 @@
  * 后端调度器到点后自动调用模型，结果归档到 [定时] 前缀的专属会话。
  */
 
-import { state } from "../store.js?v=20261017-001";
-import { get, post, del, patch } from "../services/api.js?v=20261017-001";
-import { dlgConfirm } from "../services/dialog.js?v=20261017-001";
-import { t as tr } from "../services/i18n.js?v=20261017-001"; // 任务变量也叫 t，此处别名避免遮蔽
+import { state } from "../store.js?v=20261024-001";
+import { get, post, del, patch } from "../services/api.js?v=20261024-001";
+import { dlgConfirm } from "../services/dialog.js?v=20261024-001";
+import { t as tr } from "../services/i18n.js?v=20261024-001"; // 任务变量也叫 t，此处别名避免遮蔽
 
 let modal, listEl;
 let pollTimer = null;
@@ -26,7 +26,7 @@ function formatTs(ts) {
 
 async function toast(msg) {
   try {
-    const app = await import("../app.js?v=20261017-001");
+    const app = await import("../app.js?v=20261024-001");
     app.toast(msg);
   } catch {}
 }

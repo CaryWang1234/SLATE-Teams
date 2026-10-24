@@ -15,9 +15,9 @@
  *      没单独选过的场跟默认档，空 convId 还有"还没建起来的这一场"那个槽，自己读一定读漏。
  */
 
-import { get, post } from "./api.js?v=20261017-001";
-import { state, subscribe, permissionModeFor } from "../store.js?v=20261017-001";
-import { activeRuns } from "./run_registry.js?v=20261017-001";
+import { get, post } from "./api.js?v=20261024-001";
+import { state, subscribe, permissionModeFor } from "../store.js?v=20261024-001";
+import { activeRuns } from "./run_registry.js?v=20261024-001";
 
 const HEARTBEAT_MS = 20000;      // 后端租约 60s，这里 20s 一续：网络抖一下不至于过期
 const ENDPOINT = "/system/keep-awake";

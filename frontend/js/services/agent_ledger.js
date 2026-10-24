@@ -12,8 +12,8 @@
  * 加字节数，落库的是 digest。账本失败绝不影响聊天——上行一律 fire-and-forget，异常只 warn。
  */
 
-import { post } from "./api.js?v=20261017-001";
-import { toolLabel, toolArgsSummary } from "./tool_meta.js?v=20261017-001";
+import { post } from "./api.js?v=20261024-001";
+import { toolLabel, toolArgsSummary } from "./tool_meta.js?v=20261024-001";
 
 const DIGEST_MAX = 2000;
 const MAX_PENDING = 500;
